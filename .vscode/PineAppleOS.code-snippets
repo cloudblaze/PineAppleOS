@@ -17,7 +17,7 @@
 	// }
 
 	"GNU General Public License v2.0": {
-		"scope": "gas, c",
+		"scope": "gas, c, makefile",
 		"prefix": "gpl",
 		"body": [
 			"/*",
@@ -51,7 +51,7 @@
 	},
 
 	"modify": {
-		"scope": "gas, c",
+		"scope": "gas, c, makefile",
 		"prefix": "modify",
 		"body": [
 			"/*",
