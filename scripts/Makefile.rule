@@ -1,0 +1,55 @@
+#
+# scripts/Makefile.rule
+# This file is part of PineAppleOS
+#
+# Copyright (C) 2019 - Huo Yun
+#
+# PineAppleOS is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# PineAppleOS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PineAppleOS. If not, see <http://www.gnu.org/licenses/>.
+#
+
+#
+# Created by Huo Yun - 2019-06-06
+# Description: Makefile规则定义文件
+#
+
+%.s: %.S
+	$(CC) $(CFLAGS) -E -o $@ $<
+
+%.s: %.c
+	$(CC) $(CFLAGS) -S -o $@ $<
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+%.o: %.s
+	$(AS) $(ASFLAGS) -o $@ $<
+
+%: %.o
+	$(LD) $(LDFLAGS) -Map $*.map -o $@ $^
+
+%.elf: %.o
+	$(LD) -m elf_i386 -Map $*.map -Ttext=0 -o $@ $^
+
+%.d: %.S
+	@set -e; rm -f $@; \
+	$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	echo $*.o: $*.s >> $@; \
+	rm -f $@.$$$$
+
+%.d: %.c
+	@set -e; rm -f $@; \
+	$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$

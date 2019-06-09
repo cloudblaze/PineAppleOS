@@ -17,7 +17,7 @@
 	// }
 
 	"GNU General Public License v2.0": {
-		"scope": "gas, c, makefile",
+		"scope": "gas, c",
 		"prefix": "gpl",
 		"body": [
 			"/*",
@@ -50,7 +50,41 @@
 		"description": "GNU General Public License v2.0"
 	},
 
-	"modify": {
+	"GNU General Public License v2.0 in Makefile": {
+		"scope": "makefile",
+		"prefix": "gpl",
+		"body": [
+			"#",
+			"# $1/$TM_FILENAME",
+			"# This file is part of PineAppleOS",
+			"#",
+			"# Copyright (C) $CURRENT_YEAR - ${2:Huo Yun}",
+			"#",
+			"# PineAppleOS is free software; you can redistribute it and/or modify",
+			"# it under the terms of the GNU General Public License as published by",
+			"# the Free Software Foundation; either version 2 of the License, or",
+			"# (at your option) any later version.",
+			"#",
+			"# PineAppleOS is distributed in the hope that it will be useful,",
+			"# but WITHOUT ANY WARRANTY; without even the implied warranty of",
+			"# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the",
+			"# GNU General Public License for more details.",
+			"#",
+			"# You should have received a copy of the GNU General Public License",
+			"# along with PineAppleOS. If not, see <http://www.gnu.org/licenses/>.",
+			"#",
+			"",
+			"#",
+			"# Created by ${2:Huo Yun} - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
+			"# Description: $3",
+			"#",
+			"",
+			"$0"
+		],
+		"description": "GNU General Public License v2.0 in Makefile"
+	},
+
+	"Modification infomation": {
 		"scope": "gas, c, makefile",
 		"prefix": "modify",
 		"body": [
@@ -62,5 +96,19 @@
 			"$0"
 		],
 		"description": "Modification infomation"
+	},
+
+	"Modification infomation in Makefile": {
+		"scope": "makefile",
+		"prefix": "modify",
+		"body": [
+			"/*",
+			" * Modified by ${1:Huo Yun} - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
+			" * Description: $2",
+			" */",
+			"",
+			"$0"
+		],
+		"description": "Modification infomation in Makefile"
 	}
 }
