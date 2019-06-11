@@ -29,12 +29,16 @@ export ROOT_DIR		= $(shell pwd)
 export SCRIPTS_DIR	= $(ROOT_DIR)/scripts
 # 包含文件搜索目录
 export INCLUDE_DIR	= $(ROOT_DIR)/include
+# 磁盘映像分区挂在目录
+VDISK	 = /mnt/vdisk
 
 BYTES_PER_SECTOR	= 512
 SECTORS_PER_TRACK	= 63
 HEADS				= 16
 CYLINDER			= 2080
 IMAGE_TOTAL_SIZE	= $(shell expr $(BYTES_PER_SECTOR) \* $(SECTORS_PER_TRACK) \* $(HEADS) \* $(CYLINDER))
+
+LOOP_DEVICE_COUNT	= $(shell ls /dev/loop* | grep "^/dev/loop[0-9]\{1,\}$$" | wc -l)
 
 all: Image
 
@@ -45,13 +49,38 @@ Image: bootloader os
 		dd if=/dev/zero of=$@ bs=$(IMAGE_TOTAL_SIZE) count=1; \
 	fi
 	dd if=bootloader/bootsect of=Image bs=512 count=2 conv=notrunc
-	sudo losetup -P /dev/loop14 Image
-	sudo mkfs.fat /dev/loop14p1
-	sudo mkfs.minix -1 /dev/loop14p3
-	sudo mount /dev/loop14p1 /mnt/vdisk/p1
-	sudo cp bootloader/bootloader /mnt/vdisk/p1
-	sudo umount /mnt/vdisk/p1
-	sudo losetup -d /dev/loop14
+	sudo mkdir -p $(VDISK)/p1
+	sudo mkdir -p $(VDISK)/p2
+	sudo mkdir -p $(VDISK)/p3
+	num=0;\
+	while [ $$num -ne $(LOOP_DEVICE_COUNT) ]; \
+	do \
+		sudo losetup -P /dev/loop$$num Image 2>/dev/null; \
+		if [ `echo $$?` -ne 0 ]; \
+		then \
+			num=`expr $$num + 1`; \
+			continue; \
+		fi; \
+		sudo mkfs.fat /dev/loop$${num}p1; \
+		sudo mkfs.minix -1 /dev/loop$${num}p3; \
+		sudo mount /dev/loop$${num}p1 $(VDISK)/p1; \
+		sudo cp bootloader/bootloader $(VDISK)/p1; \
+		sudo umount $(VDISK)/p1; \
+		sudo losetup -d /dev/loop$$num; \
+		num=`expr $$num + 1`; \
+		break; \
+	done; \
+	if [ $$num -eq $(LOOP_DEVICE_COUNT) ]; \
+	then \
+		sudo mknod -m 0660 /dev/loop$(LOOP_DEVICE_COUNT) b 7 $(LOOP_DEVICE_COUNT); \
+		sudo losetup -P /dev/loop$(LOOP_DEVICE_COUNT) Image; \
+		sudo mkfs.fat /dev/loop$(LOOP_DEVICE_COUNT)p1; \
+		sudo mkfs.minix -1 /dev/loop$(LOOP_DEVICE_COUNT)p3; \
+		sudo mount /dev/loop$(LOOP_DEVICE_COUNT)p1 $(VDISK)/p1; \
+		sudo cp bootloader/bootloader $(VDISK)/p1; \
+		sudo umount $(VDISK)/p1; \
+		sudo losetup -d /dev/loop$(LOOP_DEVICE_COUNT); \
+	fi
 	@echo "\033[32mCreate Image successfully!\033[0m"
 
 .PHONY: bootloader os tools clean
