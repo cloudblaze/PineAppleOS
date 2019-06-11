@@ -41,13 +41,15 @@ all: Image
 # 默认目标，生成磁盘映像文件Image
 Image: bootloader os
 	if [ ! -f $@ ]; then dd if=/dev/zero of=$@ bs=$(IMAGE_TOTAL_SIZE) count=1; fi
-	dd if=bootloader/bootsect of=Image bs=512 conv=notrunc
+	dd if=bootloader/bootsect of=Image bs=512 count=2 conv=notrunc
 	sudo losetup -P /dev/loop14 Image
 	sudo mkfs.fat /dev/loop14p1
+	sudo mkfs.minix -1 /dev/loop14p3
 	sudo mount /dev/loop14p1 /mnt/vdisk/p1
 	sudo cp bootloader/bootloader /mnt/vdisk/p1
 	sudo umount /mnt/vdisk/p1
 	sudo losetup -d /dev/loop14
+	@echo "\033[32mCreate Image successfully!\033[0m"
 
 .PHONY: bootloader os tools clean
 

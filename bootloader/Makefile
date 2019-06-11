@@ -35,7 +35,7 @@ BINARY_FILE	= bootsect bootloader
 OBJECT_FILE	= $(BOOTSECT_OBJ) $(BOOTLOADER_OBJ)
 # 中间过程临时文件
 TEMPORARY_FILE	:= $(sources_S:.S=.s)
-# 连接图文件
+# 链接图文件
 MAP_FILE		:=
 # 依赖文件
 DEPENDENT_FILE	:= $(sources_S:.S=.d)

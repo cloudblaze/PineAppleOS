@@ -51,4 +51,20 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# VSCode版本控制临时文件
 *.bin
+# 汇编语言源程序预处理结果文件
+*.s
+# 目标文件
+*.o
+# 链接图文件
+*.map
+# 依赖文件
+*.d
+# 磁盘映像文件各组成部分
+bootloader/bootsect
+bootloader/bootloader
+os/system
+os/system.elf
+# 磁盘映像文件
+Image
