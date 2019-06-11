@@ -62,8 +62,8 @@ dkms.conf
 # 依赖文件
 *.d
 # 磁盘映像文件各组成部分
-bootloader/bootsect
-bootloader/bootloader
+bootloader/boot
+bootloader/loader
 os/system
 os/system.elf
 # 磁盘映像文件

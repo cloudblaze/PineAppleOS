@@ -31,10 +31,36 @@
 
 BOOTSECT_SEGMENT = DEF_BOOTSECT_SEGMENT >> 4
 BOOTSECT_STACK_SEGMENT = DEF_BOOTSECT_STACK_SEGMENT >> 4
-BOOTLOADER_SEGMENT = DEF_BOOTLOADER_SEGMENT >> 4
+LOADER_SEGMENT = DEF_LOADER_SEGMENT >> 4
 BOOTPARAM_SEGMENT = DEF_BOOTPARAM_SEGMENT >> 4
 
 DEFAULT_CHARACTER_ATTRIBUTE = 0x07
+
+// 每扇区字节数
+FAT16_DBP_OFFSET_BYTES_PER_SECTOR = 0x0b
+// 每簇扇区数
+FAT16_DBP_OFFSET_SECTORS_PER_CLUSTER = 0x0d
+// 保留扇区的数目
+FAT16_DBP_OFFSET_RESERVED_SECTORS = 0x0e
+// FAT表数目
+FAT16_DBP_OFFSET_FAT_COUNT = 0x10
+// 在根目录中可容纳的目录项个数。需要注意的是，由于有长文件名的存在，目录项个数不等于文件个数。
+FAT16_DBP_OFFSET_ROOT_DIRECTORY_ENTRY_COUNT = 0x11
+// 一个FAT表所占用的扇区数
+FAT16_DBP_OFFSET_SECTORS_PER_FAT = 0x16
+
+// 文件属性
+FAT16_RDE_OFFSET_MODE = 0x0b
+// 文件的起始簇号
+FAT16_RDE_OFFSET_START_CLUSTER_NUM = 0x1a
+// 文件大小，以字节为单位
+FAT16_RDE_OFFSET_LENGTH = 0x1c
+
+// FDT表中目录项的大小
+FAT16_DIRECTORY_ENTRY_SIZE = 0x20
+
+// FDT表中长文件名的目录项属性
+FAT16_LONG_FILENAME_MODE = 0x0f
 
 	.code16
 	.section .text
@@ -63,6 +89,7 @@ _start:
 	mov $0x0003, %ax
 	int $0x10
 
+	// 加载boot程序剩余代码
 load_rest_code:
 	pushw $BOOTSECT_SEGMENT
 	pushw $0x200
@@ -70,10 +97,11 @@ load_rest_code:
 	pushw $1
 	pushl $1
 	call load_sectors
-	add $10, %sp
+	add $12, %sp
 	test %ax, %ax
-	jz load_bootloader
+	jz load_loader
 
+	// 如果boot程序剩余代码加载失败，则停机
 halt1:
 	hlt
 	jmp halt1
@@ -83,7 +111,7 @@ halt1:
 /*
  * function: 加载磁盘扇区到内存指定地址。
  * args:
- * 	%bx -- 4(%bp) -- 待加载的起始扇区号
+ * 	%ebx -- 4(%bp) -- 待加载的起始扇区号
  * 	%cx -- 8(%bp) -- 待加载的扇区数
  *	%dl -- 10(%bp) -- 驱动器号
  * 	%di -- 12(%bp) -- 加载地址偏移量
@@ -117,7 +145,6 @@ load_sectors:
 	mov %eax, _disk_address_packet_buffer
 	mov %ebx, _disk_address_packet_start_num
 	mov $0x42, %ah
-	mov $0x80, %dl
 	mov $_disk_address_packet, %si
 	int $0x13
 	
@@ -125,7 +152,7 @@ load_sectors:
 	pop %si
 	pop %dx
 	pop %cx
-	pop %bx
+	pop %ebx
 	pop %es
 	mov %bp, %sp
 	pop %bp
@@ -139,6 +166,9 @@ _disk_address_packet_buffer:		.long 0
 _disk_address_packet_start_num:		.quad 0
 
 /******************** function load_sectors end ********************/
+
+boot_device_num:
+	.word 0
 
 /******************** variable begin ********************/
 
@@ -212,9 +242,9 @@ boot_flag:
 /******************** variable end ********************/
 
 /******************** rest code begin ********************/
-	// 加载bootloader
-load_bootloader:
-	// 屏幕打印"Loading bootloader ... "
+	// 加载loader
+load_loader:
+	// 屏幕打印"Loading loader ... "
 	xor %bh, %bh
 	mov $DEFAULT_CHARACTER_ATTRIBUTE, %bl
 	mov $message_loading, %si
@@ -227,103 +257,107 @@ load_bootloader:
 1:
 
 	// 通过调用子例程load_sectors加载fat16分区文件系统，
-	// 并且搜索加载文件bootloader。
-	pushw $BOOTLOADER_SEGMENT
+	// 并且搜索加载文件loader。
+	pushw $LOADER_SEGMENT
 	pushw $0
 	push boot_device_num
 	pushw $1
 	pushl partition_table_entry_1_start_lba
 	call load_sectors
-	add $10, %sp
+	add $12, %sp
 	test %ax, %ax
 	jnz 3f
 
 	// 找到FDT
-	pushw $BOOTLOADER_SEGMENT
+	pushw $LOADER_SEGMENT
 	pop %gs
-	mov %gs:0x0d, %al
+	mov %gs:FAT16_DBP_OFFSET_SECTORS_PER_CLUSTER, %al
 	mov %al, sectors_per_cluster
 	mov partition_table_entry_1_start_lba, %ebx
-	xor %eax, %eax
-	mov %gs:0x0e, %ax
+	movzxw %gs:FAT16_DBP_OFFSET_RESERVED_SECTORS, %eax
 	add %eax, %ebx
-	xor %eax, %eax
-	xor %ecx, %ecx
-	mov %gs:0x16, %ax
-	mov %gs:0x10, %cl
+	mov %gs:FAT16_DBP_OFFSET_SECTORS_PER_FAT, %ax
+	movzxb %gs:FAT16_DBP_OFFSET_FAT_COUNT, %cx
 	mul %cx
 	shl $16, %edx
 	mov %ax, %dx
 	add %edx, %ebx
 	mov %ebx, %esi
 
-	mov $0x20, %cl
+
+	mov %gs:FAT16_DBP_OFFSET_BYTES_PER_SECTOR, %ax
+	mov %ax, bytes_per_sector
+	movb $FAT16_DIRECTORY_ENTRY_SIZE, %cl
 	div %cl
 	mov %al, %cl
-	movw %gs:0x11, %ax
+	mov %gs:FAT16_DBP_OFFSET_ROOT_DIRECTORY_ENTRY_COUNT, %ax
 	mov %ax, root_directory_entry_count
 	div %cl
 	mov %al, %dl
-	mov %cx, %dx
 
-	// 加载FDT，并且在FDT中搜索文件bootloader。
-4:	pushw $BOOTLOADER_SEGMENT
+	// 加载FDT，并且在FDT中搜索文件loader。
+4:	pushw $LOADER_SEGMENT
 	pushw $0
 	push boot_device_num
 	pushw $1
 	push %esi
 	call load_sectors
-	add $10, %sp
+	add $12, %sp
 	test %ax, %ax
 	jnz 3f
 
-	mov $0x0b, %edi
-2:	cmpb $0x0f, %gs:(%di)
+	mov $FAT16_RDE_OFFSET_MODE, %di
+2:	cmpb $FAT16_LONG_FILENAME_MODE, %gs:(%di)
 	jne 1f
-	add $0x20, %di
+	add $FAT16_DIRECTORY_ENTRY_SIZE, %di
 	dec %cl
 	cmp $0, %cl
 	jne 2b
-	mov %dx, %cx
+	mov %dl, %cl
 	inc %esi
 	dec %dl
 	jne 4b
 
-1:	pop %cx
-	and $0xffffffe0, %edi
-	// 此时%gs:0x1a(%edi)为bootloader的起始簇号，%gs:0x1c(%edi)为bootloader的长度
+1:	and $0xffe0, %di
+	// 此时，%gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di)为loader的起始簇号，
+	// 而，%gs:FAT16_RDE_OFFSET_LENGTH(%di)为loader的长度
 
-	xor %eax, %eax
-	mov root_directory_entry_count, %ax
-	shr $4, %ax
+	// 跳过FAT表
+	mov $FAT16_DIRECTORY_ENTRY_SIZE, %ax
+	mov root_directory_entry_count, %cx
+	mul %cx
+	mov bytes_per_sector, %cx
+	div %cx
+	and $0x0000ffff, %eax
 	add %eax, %ebx
-	xor %edx, %edx
-	mov %gs:0x1a(%edi), %cx
+
+	movzxb sectors_per_cluster, %ax
+	mov %gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di), %cx
 	sub $2, %cx
-	xor %eax, %eax
-	mov sectors_per_cluster, %al
 	mul %cx
 	shl $16, %edx
 	mov %ax, %dx
 	add %edx, %ebx
 
-	xor %edx, %edx
-	mov %gs:0x1c(%edi), %eax
-	add $0x1ff, %eax
-	mov $0x200, %cx
+	mov %gs:FAT16_RDE_OFFSET_LENGTH(%di), %eax
+	movzxw bytes_per_sector, %ecx
+	dec %ecx
+	add %ecx, %eax
+	mov %eax, %ecx
+	shr $16, %ecx
+	mov %cx, %dx
+	mov bytes_per_sector, %cx
 	div %cx
 	mov %ax, %cx
 	
-	// 通过调用子例程load_sectors加载bootloader
-	pushw $BOOTLOADER_SEGMENT
+	// 通过调用子例程load_sectors加载loader
+	pushw $LOADER_SEGMENT
 	pushw $0
 	push boot_device_num
-	//pushw $1
-	//pushw $1
 	push %cx
 	pushl %ebx
 	call load_sectors
-	add $10, %sp
+	add $12, %sp
 	test %ax, %ax
 	jnz 3f
 
@@ -339,8 +373,8 @@ load_bootloader:
 	jmp 2b
 1:
 
-	// 跳转到bootloader
-	ljmp $BOOTLOADER_SEGMENT, $0
+	// 跳转到loader
+	ljmp $LOADER_SEGMENT, $0
 
 3:
 	// 屏幕打印"failure!"
@@ -360,13 +394,13 @@ halt2:
 	jmp halt2
 
 message_loading:
-	.asciz "Loading bootloader ... "
+	.asciz "Loading loader ... "
 message_success:
 	.asciz "success!\n\r"
 message_failure:
 	.asciz "failure!\n\r"
 
-boot_device_num:
+bytes_per_sector:
 	.word 0
 
 sectors_per_cluster:
