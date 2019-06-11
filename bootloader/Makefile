@@ -30,9 +30,9 @@ include $(SCRIPTS_DIR)/Makefile.rule
 sources_S = $(shell ls *.S)
 
 # 二进制文件
-BINARY_FILE	= bootsect bootloader
+BINARY_FILE	= boot loader
 # 目标文件
-OBJECT_FILE	= $(BOOTSECT_OBJ) $(BOOTLOADER_OBJ)
+OBJECT_FILE	= $(BOOT_OBJ) $(LOADER_OBJ)
 # 中间过程临时文件
 TEMPORARY_FILE	:= $(sources_S:.S=.s)
 # 链接图文件
@@ -46,20 +46,20 @@ ASFLAGS = $(ASFLAGS_16)
 CFLAGS	= $(CFLAGS_16) -I.
 LDFLAGS = $(LDFLAGS_16) -Ttext=0x0
 
-BOOTSECT_OBJ = bootsect.o
+BOOT_OBJ = boot.o
 
-bootsect: $(BOOTSECT_OBJ)
-MAP_FILE	+= bootsect.map
+boot: $(BOOT_OBJ)
+MAP_FILE	+= boot.map
 
 # 注释为最终的代码，但需要逐步编码
-# BOOTLOADER_OBJ	= system.o main16.o \
+# LOADER_OBJ	= system.o main16.o \
 # 					rm.o intcall.o \
 # 					console.o vbe.o printf.o vsprintf16.o string.o \
 # 					main32.o
-BOOTLOADER_OBJ	= bootloader.o
+LOADER_OBJ	= loader.o
 
-bootloader: $(BOOTLOADER_OBJ)
-MAP_FILE	+= bootloader.map
+loader: $(LOADER_OBJ)
+MAP_FILE	+= loader.map
 
 # 注释为最终的代码，但需要逐步编码
 #main16.o: main16.c

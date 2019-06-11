@@ -29,7 +29,7 @@ export ROOT_DIR		= $(shell pwd)
 export SCRIPTS_DIR	= $(ROOT_DIR)/scripts
 # 包含文件搜索目录
 export INCLUDE_DIR	= $(ROOT_DIR)/include
-# 磁盘映像分区挂在目录
+# 磁盘映像分区挂载目录
 VDISK	 = /mnt/vdisk
 
 BYTES_PER_SECTOR	= 512
@@ -44,11 +44,15 @@ all: Image
 
 # 默认目标，生成磁盘映像文件Image
 Image: bootloader os
-	if [ ! -f $@ -o `wc -c < $@` -ne $(IMAGE_TOTAL_SIZE) ]; \
+	if [ ! -f $@ ]; \
 	then \
 		dd if=/dev/zero of=$@ bs=$(IMAGE_TOTAL_SIZE) count=1; \
 	fi
-	dd if=bootloader/bootsect of=Image bs=512 count=2 conv=notrunc
+	if [ `wc -c < $@` -ne $(IMAGE_TOTAL_SIZE) ]; \
+	then \
+		dd if=/dev/zero of=$@ bs=$(IMAGE_TOTAL_SIZE) count=1; \
+	fi
+	dd if=bootloader/boot of=Image bs=512 count=2 conv=notrunc
 	sudo mkdir -p $(VDISK)/p1
 	sudo mkdir -p $(VDISK)/p2
 	sudo mkdir -p $(VDISK)/p3
@@ -64,7 +68,8 @@ Image: bootloader os
 		sudo mkfs.fat /dev/loop$${num}p1; \
 		sudo mkfs.minix -1 /dev/loop$${num}p3; \
 		sudo mount /dev/loop$${num}p1 $(VDISK)/p1; \
-		sudo cp bootloader/bootloader $(VDISK)/p1; \
+		sudo cp bootloader/loader $(VDISK)/p1; \
+		sudo cp os/system.elf $(VDISK)/p1; \
 		sudo umount $(VDISK)/p1; \
 		sudo losetup -d /dev/loop$$num; \
 		num=`expr $$num + 1`; \
@@ -77,7 +82,8 @@ Image: bootloader os
 		sudo mkfs.fat /dev/loop$(LOOP_DEVICE_COUNT)p1; \
 		sudo mkfs.minix -1 /dev/loop$(LOOP_DEVICE_COUNT)p3; \
 		sudo mount /dev/loop$(LOOP_DEVICE_COUNT)p1 $(VDISK)/p1; \
-		sudo cp bootloader/bootloader $(VDISK)/p1; \
+		sudo cp bootloader/loader $(VDISK)/p1; \
+		sudo cp os/system.elf $(VDISK)/p1; \
 		sudo umount $(VDISK)/p1; \
 		sudo losetup -d /dev/loop$(LOOP_DEVICE_COUNT); \
 	fi

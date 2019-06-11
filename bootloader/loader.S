@@ -1,5 +1,5 @@
 /*
- * /bootloader/bootloader.S
+ * /bootloader/loader.S
  * This file is part of PineAppleOS
  *
  * Copyright (C) 2019 - Huo Yun

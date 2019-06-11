@@ -1,5 +1,5 @@
 /*
- * /bootloader/bootsect.S
+ * /bootloader/boot.S
  * This file is part of PineAppleOS
  *
  * Copyright (C) 2019 - Huo Yun
@@ -20,7 +20,9 @@
 
 /*
  * Created by Huo Yun - 2019-06-06
- * Description: 磁盘引导扇区，同时也是bootloader的第一部分。
+ * Description: 该程序bootloader的第一部分，也就是自举程序boot。其中包含磁盘引导扇区。
+ * 	由于磁盘引导扇区的容量不够，故将一部分代码放置在磁盘第二个扇区上。引导扇区先将第二个扇区
+ * 	加载进内存中，然后再对FAT16文件系统进行解析，最终找到bootloader的第二部分（加载程序loader）。
  */
 
 #include <config/bootsect.h>
