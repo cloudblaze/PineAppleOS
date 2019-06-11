@@ -40,7 +40,10 @@ all: Image
 
 # 默认目标，生成磁盘映像文件Image
 Image: bootloader os
-	if [ ! -f $@ ]; then dd if=/dev/zero of=$@ bs=$(IMAGE_TOTAL_SIZE) count=1; fi
+	if [ ! -f $@ -o `wc -c < $@` -ne $(IMAGE_TOTAL_SIZE) ]; \
+	then \
+		dd if=/dev/zero of=$@ bs=$(IMAGE_TOTAL_SIZE) count=1; \
+	fi
 	dd if=bootloader/bootsect of=Image bs=512 count=2 conv=notrunc
 	sudo losetup -P /dev/loop14 Image
 	sudo mkfs.fat /dev/loop14p1
