@@ -68,3 +68,5 @@ os/system
 os/system.elf
 # 磁盘映像文件
 Image
+# bochs启动锁定文件
+Image.lock

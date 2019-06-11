@@ -93,7 +93,7 @@ _start:
 load_rest_code:
 	pushw $BOOTSECT_SEGMENT
 	pushw $0x200
-	push boot_device_num
+	pushw boot_device_num
 	pushw $1
 	pushl $1
 	call load_sectors
@@ -260,13 +260,13 @@ load_loader:
 	// 并且搜索加载文件loader。
 	pushw $LOADER_SEGMENT
 	pushw $0
-	push boot_device_num
+	pushw boot_device_num
 	pushw $1
 	pushl partition_table_entry_1_start_lba
 	call load_sectors
 	add $12, %sp
 	test %ax, %ax
-	jnz 3f
+	jnz load_sector_failure
 
 	// 找到FDT
 	pushw $LOADER_SEGMENT
@@ -276,14 +276,15 @@ load_loader:
 	mov partition_table_entry_1_start_lba, %ebx
 	movzxw %gs:FAT16_DBP_OFFSET_RESERVED_SECTORS, %eax
 	add %eax, %ebx
+	mov %ebx, fat_start_num
 	mov %gs:FAT16_DBP_OFFSET_SECTORS_PER_FAT, %ax
 	movzxb %gs:FAT16_DBP_OFFSET_FAT_COUNT, %cx
 	mul %cx
 	shl $16, %edx
 	mov %ax, %dx
 	add %edx, %ebx
+	mov %ebx, fdt_start_num
 	mov %ebx, %esi
-
 
 	mov %gs:FAT16_DBP_OFFSET_BYTES_PER_SECTOR, %ax
 	mov %ax, bytes_per_sector
@@ -298,13 +299,13 @@ load_loader:
 	// 加载FDT，并且在FDT中搜索文件loader。
 4:	pushw $LOADER_SEGMENT
 	pushw $0
-	push boot_device_num
+	pushw boot_device_num
 	pushw $1
 	push %esi
 	call load_sectors
 	add $12, %sp
 	test %ax, %ax
-	jnz 3f
+	jnz load_sector_failure
 
 	mov $FAT16_RDE_OFFSET_MODE, %di
 2:	cmpb $FAT16_LONG_FILENAME_MODE, %gs:(%di)
@@ -322,7 +323,7 @@ load_loader:
 	// 此时，%gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di)为loader的起始簇号，
 	// 而，%gs:FAT16_RDE_OFFSET_LENGTH(%di)为loader的长度
 
-	// 跳过FAT表
+	// 跳过FDT表
 	mov $FAT16_DIRECTORY_ENTRY_SIZE, %ax
 	mov root_directory_entry_count, %cx
 	mul %cx
@@ -330,36 +331,17 @@ load_loader:
 	div %cx
 	and $0x0000ffff, %eax
 	add %eax, %ebx
+	mov %ebx, data_start_num
 
-	movzxb sectors_per_cluster, %ax
-	mov %gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di), %cx
-	sub $2, %cx
-	mul %cx
-	shl $16, %edx
-	mov %ax, %dx
-	add %edx, %ebx
-
-	mov %gs:FAT16_RDE_OFFSET_LENGTH(%di), %eax
-	movzxw bytes_per_sector, %ecx
-	dec %ecx
-	add %ecx, %eax
-	mov %eax, %ecx
-	shr $16, %ecx
-	mov %cx, %dx
-	mov bytes_per_sector, %cx
-	div %cx
-	mov %ax, %cx
-	
-	// 通过调用子例程load_sectors加载loader
+	// 通过调用子例程load_sectors_by_cluster_num加载loader
 	pushw $LOADER_SEGMENT
 	pushw $0
-	push boot_device_num
-	push %cx
-	pushl %ebx
-	call load_sectors
-	add $12, %sp
+	pushw boot_device_num
+	pushw %gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di)
+	call load_sectors_by_cluster_num
+	add $8, %sp
 	test %ax, %ax
-	jnz 3f
+	jnz load_sector_failure
 
 	// 屏幕打印"success!"
 	xor %bh, %bh
@@ -376,7 +358,7 @@ load_loader:
 	// 跳转到loader
 	ljmp $LOADER_SEGMENT, $0
 
-3:
+load_sector_failure:
 	// 屏幕打印"failure!"
 	xor %bh, %bh
 	mov $DEFAULT_CHARACTER_ATTRIBUTE, %bl
@@ -393,6 +375,53 @@ halt2:
 	hlt
 	jmp halt2
 
+/******************** function load_sectors_by_cluster_num begin ********************/
+
+/*
+ * function: 将FAT16分区中指定簇号的扇区加载到内存指定地址。
+ * args:
+ * 	4(%bp) -- 待加载的簇号
+ *	6(%bp) -- 驱动器号
+ * 	8(%bp) -- 加载地址偏移量
+ * 	10(%bp) -- 加载地址段基址
+ * return:
+ * 	success: %ax == 0
+ *	failure: %ax != 0
+ */
+load_sectors_by_cluster_num:
+	push %bp
+	mov %sp, %bp
+	push %cx
+	push %edx
+
+	movzxb sectors_per_cluster, %ax
+	mov 4(%bp), %cx
+	sub $2, %cx
+	mul %cx
+	shl $16, %edx
+	mov %ax, %dx
+	add data_start_num, %edx
+
+	// 通过调用子例程load_sectors加载指定簇中的扇区
+	pushw 10(%bp)
+	pushw 8(%bp)
+	pushw 6(%bp)
+	pushw sectors_per_cluster
+	pushl %edx
+	call load_sectors
+	add $12, %sp
+
+	pop %edx
+	pop %cx
+	mov %bp, %sp
+	pop %bp
+	ret
+
+data_start_num:
+	.long 0
+
+/******************** function load_sectors_by_cluster_num end ********************/
+
 message_loading:
 	.asciz "Loading loader ... "
 message_success:
@@ -402,11 +431,14 @@ message_failure:
 
 bytes_per_sector:
 	.word 0
-
 sectors_per_cluster:
 	.byte 0
-
 root_directory_entry_count:
 	.word 0
+
+fat_start_num:
+	.long 0
+fdt_start_num:
+	.long 0
 
 /******************** rest code end ********************/
