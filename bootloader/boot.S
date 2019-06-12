@@ -349,6 +349,7 @@ load_loader:
 	pop %es
 	xor %di, %di
 	stosw
+	incw loader_cluster_count
 	mov %esi, last_sector_num
 
 2:	mov %es:-2(%di), %si
@@ -379,27 +380,39 @@ load_loader:
 	je 1f
 	mov %gs:(%si), %ax
 	stosw
+	incw loader_cluster_count
 	jmp 2b
 
 	// 跳过FDT表
 1:	mov $FAT16_DIRECTORY_ENTRY_SIZE, %ax
-	mov root_directory_entry_count, %cx
-	mul %cx
-	mov bytes_per_sector, %cx
-	div %cx
+	mulw root_directory_entry_count
+	divw bytes_per_sector
 	and $0x0000ffff, %eax
 	add %eax, %ebx
 	mov %ebx, data_start_num
 
 	// 通过调用子例程load_sectors_by_cluster_num加载loader
-	pushw $LOADER_SEGMENT
+	xor %si, %si
+	mov $LOADER_SEGMENT, %dx
+	mov bytes_per_sector, %ax
+	shr $4, %ax
+	mulb sectors_per_cluster
+	mov %ax, %bx
+	mov loader_cluster_count, %cx
+2:	mov %es:(%si), %ax
+
+	push %dx
 	pushw $0
 	pushw boot_device_num
-	pushw loader_start_cluster_num
+	push %ax
 	call load_sectors_by_cluster_num
 	add $8, %sp
 	test %ax, %ax
 	jnz load_sector_failure
+	add $2, %si
+	add %bx, %dx
+	loop 2b
+3:
 
 	// 屏幕打印"success!"
 	xor %bh, %bh
@@ -501,6 +514,8 @@ fdt_start_num:
 
 loader_start_cluster_num:
 	.word 0
+loader_cluster_count:
+	.word 0
 
 last_sector_num:
 	.long 0
@@ -512,33 +527,7 @@ boot_end:
 	.align 0x200
 	/*
 	 * 由于按照512字节（一个扇区的大小）对齐，故gas会在此处填充一些数据，如下：
- 38f:	eb 6f                	jmp    0x400
- 391:	8d b4 00 00          	lea    0x0(%si),%si
- 395:	8d b4 00 00          	lea    0x0(%si),%si
- 399:	8d b4 00 00          	lea    0x0(%si),%si
- 39d:	8d b4 00 00          	lea    0x0(%si),%si
- 3a1:	8d b4 00 00          	lea    0x0(%si),%si
- 3a5:	8d b4 00 00          	lea    0x0(%si),%si
- 3a9:	8d b4 00 00          	lea    0x0(%si),%si
- 3ad:	8d b4 00 00          	lea    0x0(%si),%si
- 3b1:	8d b4 00 00          	lea    0x0(%si),%si
- 3b5:	8d b4 00 00          	lea    0x0(%si),%si
- 3b9:	8d b4 00 00          	lea    0x0(%si),%si
- 3bd:	8d b4 00 00          	lea    0x0(%si),%si
- 3c1:	8d b4 00 00          	lea    0x0(%si),%si
- 3c5:	8d b4 00 00          	lea    0x0(%si),%si
- 3c9:	8d b4 00 00          	lea    0x0(%si),%si
- 3cd:	8d b4 00 00          	lea    0x0(%si),%si
- 3d1:	8d b4 00 00          	lea    0x0(%si),%si
- 3d5:	8d b4 00 00          	lea    0x0(%si),%si
- 3d9:	8d b4 00 00          	lea    0x0(%si),%si
- 3dd:	8d b4 00 00          	lea    0x0(%si),%si
- 3e1:	8d b4 00 00          	lea    0x0(%si),%si
- 3e5:	8d b4 00 00          	lea    0x0(%si),%si
- 3e9:	8d b4 00 00          	lea    0x0(%si),%si
- 3ed:	8d b4 00 00          	lea    0x0(%si),%si
- 3f1:	8d b4 00 00          	lea    0x0(%si),%si
- 3f5:	8d b4 00 00          	lea    0x0(%si),%si
- 3f9:	8d b4 00 00          	lea    0x0(%si),%si
- 3fd:	8d 74 00             	lea    0x0(%si),%si
+ 3f6:	8d b4 00 00          	lea    0x0(%si),%si
+ 3fa:	8d b4 00 00          	lea    0x0(%si),%si
+ 3fe:	66 90                	xchg   %eax,%eax
 	 */

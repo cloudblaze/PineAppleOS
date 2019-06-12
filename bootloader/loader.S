@@ -29,3 +29,11 @@
 
 _start:
 	mov $0x11223344, %eax
+
+halt:
+	hlt
+	jmp halt
+
+	.org 0x7fffc
+	.long 0x55667788
+	.org 0x80000
