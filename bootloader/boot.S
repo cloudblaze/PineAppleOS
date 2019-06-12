@@ -29,6 +29,8 @@
 #include <config/boot_parameter.h>
 #include <config/memory_layout.h>
 
+#define DEFAULT_LOADER_FILENAME "loader"
+
 BOOT_SEGMENT = DEFAULT_BOOT_SEGMENT >> 4
 LOADER_SEGMENT = DEFAULT_LOADER_SEGMENT >> 4
 BOOTPARAM_SEGMENT = DEFAULT_BOOTPARAM_SEGMENT >> 4
@@ -54,17 +56,18 @@ FAT16_DBP_OFFSET_ROOT_DIRECTORY_ENTRY_COUNT = 0x11
 FAT16_DBP_OFFSET_SECTORS_PER_FAT = 0x16
 
 // 文件属性
-FAT16_RDE_OFFSET_MODE = 0x0b
+FAT16_FDE_OFFSET_MODE = 0x0b
 // 文件的起始簇号
-FAT16_RDE_OFFSET_START_CLUSTER_NUM = 0x1a
+FAT16_FDE_OFFSET_START_CLUSTER_NUM = 0x1a
 // 文件大小，以字节为单位
-FAT16_RDE_OFFSET_LENGTH = 0x1c
+FAT16_FDE_OFFSET_LENGTH = 0x1c
 
 // FDT表中目录项的大小
 FAT16_DIRECTORY_ENTRY_SIZE = 0x20
 
 // FDT表中长文件名的目录项属性
 FAT16_LONG_FILENAME_MODE = 0x0f
+FAT16_FILE_DELETED_FLAG = 0xe5
 
 // FAT表中的结束标志
 FAT16_FAT_END_FLAG = 0xffff
@@ -74,6 +77,7 @@ DEFAULT_BYTES_PER_SECTOR = 0x200
 	.code16
 	.section .text
 	.global _start
+	.global LABEL_debug
 
 _start:
 	ljmp $BOOT_SEGMENT, $1f
@@ -309,11 +313,12 @@ load_loader:
 	mov %ax, bytes_per_sector
 	movb $FAT16_DIRECTORY_ENTRY_SIZE, %cl
 	div %cl
-	mov %al, %cl
+	mov %al, %cl	// %cl -- 每个扇区包含的目录项个数
+	mov %cl, _rest_fde_count_of_current_sector
 	mov %gs:FAT16_DBP_OFFSET_ROOT_DIRECTORY_ENTRY_COUNT, %ax
 	mov %ax, root_directory_entry_count
 	div %cl
-	mov %al, %dl
+	mov %al, %dl	// %dl -- 保存所有根目录项所需的扇区个数
 
 	// 加载FDT，并且在FDT中搜索文件loader。
 4:	pushw $BOOT_BUFFER_SEGMENT
@@ -326,22 +331,36 @@ load_loader:
 	test %ax, %ax
 	jnz load_sector_failure
 
-	mov $FAT16_RDE_OFFSET_MODE, %di
+	mov $FAT16_FDE_OFFSET_MODE, %di
 2:	cmpb $FAT16_LONG_FILENAME_MODE, %gs:(%di)
-	jne 1f
-	add $FAT16_DIRECTORY_ENTRY_SIZE, %di
+	je 1f
+	cmpb $FAT16_FILE_DELETED_FLAG, %gs:(%di)
+	je 1f
+	// 按长文件名确定是否为指定文件的目录项
+	mov %di, %ax
+	and $0xffe0, %ax
+	push %gs
+	push %ax
+	call check_fde_by_long_filename
+	add $4, %sp
+	test %ax, %ax
+	jnz 1f
+	jmp 3f
+1:	add $FAT16_DIRECTORY_ENTRY_SIZE, %di
 	dec %cl
 	cmp $0, %cl
 	jne 2b
-	mov %dl, %cl
+	mov _rest_fde_count_of_current_sector, %cl
 	inc %esi
 	dec %dl
-	jne 4b
+	cmp $0, %dl
+	je load_sector_failure
+	jmp 4b
 
-1:	and $0xffe0, %di
-	// 此时，%gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di)为loader的起始簇号，
-	// 而，%gs:FAT16_RDE_OFFSET_LENGTH(%di)为loader的长度
-	mov %gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di), %ax
+3:	and $0xffe0, %di
+	// 此时，%gs:FAT16_FDE_OFFSET_START_CLUSTER_NUM(%di)为loader的起始簇号，
+	// 而，%gs:FAT16_FDE_OFFSET_LENGTH(%di)为loader的长度
+	mov %gs:FAT16_FDE_OFFSET_START_CLUSTER_NUM(%di), %ax
 	mov %ax, loader_start_cluster_num
 
 	// 获取文件loader所占用的簇号
@@ -493,6 +512,38 @@ data_start_num:
 
 /******************** function load_sectors_by_cluster_num end ********************/
 
+/******************** function check_fde_by_long_filename begin ********************/
+
+/*
+ * function: 将FAT16分区中指定簇号的扇区加载到内存指定地址。
+ * args:
+ * 	4(%bp) -- 加载地址偏移量
+ * 	6(%bp) -- 加载地址段基址
+ * return:
+ * 	success: %ax == 0
+ *	failure: %ax != 0
+ */
+check_fde_by_long_filename:
+	push %bp
+	mov %sp, %bp
+	push %gs
+	push %di
+
+	pushw 6(%bp)
+	pop %gs
+	mov 4(%bp), %di
+
+	xor %ax, %ax
+	//mov $1, %ax
+
+	pop %di
+	pop %gs
+	mov %bp, %sp
+	pop %bp
+	ret
+
+/******************** function check_fde_by_long_filename end ********************/
+
 message_loading:
 	.asciz "Loading loader ... "
 message_success:
@@ -516,9 +567,14 @@ loader_start_cluster_num:
 	.word 0
 loader_cluster_count:
 	.word 0
+loader_filename:
+	.asciz DEFAULT_LOADER_FILENAME
 
 last_sector_num:
 	.long 0
+
+_rest_fde_count_of_current_sector:
+	.byte 0
 
 /******************** rest code end ********************/
 
