@@ -20,8 +20,8 @@
 
 /*
  * Created by Huo Yun - 2019-06-06
- * Description: 该程序bootloader的第一部分，也就是自举程序boot。其中包含磁盘引导扇区。
- * 	由于磁盘引导扇区的容量不够，故将一部分代码放置在磁盘第二个扇区上。引导扇区先将第二个扇区
+ * Description: 该程序是bootloader的第一部分，也就是自举程序boot，其中包含磁盘引导扇区。
+ * 	由于磁盘引导扇区的容量不够，故将一部分代码放置在磁盘后续的扇区上。引导扇区先将后续扇区
  * 	加载进内存中，然后再对FAT16文件系统进行解析，最终找到bootloader的第二部分（加载程序loader）。
  */
 
@@ -29,10 +29,14 @@
 #include <config/boot_parameter.h>
 #include <config/memory_layout.h>
 
-BOOTSECT_SEGMENT = DEFAULT_BOOTSECT_SEGMENT >> 4
-BOOTSECT_STACK_SEGMENT = DEFAULT_BOOTSECT_STACK_SEGMENT >> 4
+BOOT_SEGMENT = DEFAULT_BOOT_SEGMENT >> 4
 LOADER_SEGMENT = DEFAULT_LOADER_SEGMENT >> 4
 BOOTPARAM_SEGMENT = DEFAULT_BOOTPARAM_SEGMENT >> 4
+BOOT_STACK_SEGMENT = DEFAULT_BOOT_STACK_SEGMENT >> 4
+BOOT_BUFFER_SEGMENT = DEFAULT_BOOT_BUFFER_SEGMENT >> 4
+BOOT_CLUSTER_NUM_SEGMENT = DEFAULT_BOOT_CLUSTER_NUM_SEGMENT >> 4
+
+BOOT_STACK_LENGTH = DEFAULT_BOOT_STACK_LENGTH
 
 DEFAULT_CHARACTER_ATTRIBUTE = 0x07
 
@@ -69,15 +73,15 @@ DEFAULT_BYTES_PER_SECTOR = 0x200
 	.global _start
 
 _start:
-	ljmp $BOOTSECT_SEGMENT, $1f
+	ljmp $BOOT_SEGMENT, $1f
 1:
 
 	// 初始化段寄存器
 	mov %cs, %ax
 	mov %ax, %ds
-	mov $BOOTSECT_STACK_SEGMENT, %ax
-	mov %ax, %ss        // 此处使用0x8000~0x8400作为堆栈段
-	mov $0x400, %bp
+	mov $BOOT_STACK_SEGMENT, %ax
+	mov %ax, %ss
+	mov $BOOT_STACK_LENGTH, %bp
 	mov %bp, %sp
 
 	// 保存启动设备驱动器号
@@ -101,7 +105,7 @@ load_rest_code:
 	div %cx
 	dec %ax
 
-	pushw $BOOTSECT_SEGMENT
+	pushw $BOOT_SEGMENT
 	pushw $0x200
 	pushw boot_device_num
 	pushw %ax
@@ -270,7 +274,7 @@ load_loader:
 
 	// 通过调用子例程load_sectors加载fat16分区文件系统，
 	// 并且搜索加载文件loader。
-	pushw $LOADER_SEGMENT
+	pushw $BOOT_BUFFER_SEGMENT
 	pushw $0
 	pushw boot_device_num
 	pushw $1
@@ -281,7 +285,7 @@ load_loader:
 	jnz load_sector_failure
 
 	// 找到FDT
-	pushw $LOADER_SEGMENT
+	pushw $BOOT_BUFFER_SEGMENT
 	pop %gs
 	mov %gs:FAT16_DBP_OFFSET_SECTORS_PER_CLUSTER, %al
 	mov %al, sectors_per_cluster
@@ -309,7 +313,7 @@ load_loader:
 	mov %al, %dl
 
 	// 加载FDT，并且在FDT中搜索文件loader。
-4:	pushw $LOADER_SEGMENT
+4:	pushw $BOOT_BUFFER_SEGMENT
 	pushw $0
 	pushw boot_device_num
 	pushw $1
