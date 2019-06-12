@@ -24,7 +24,7 @@
 			" * $1/$TM_FILENAME",
 			" * This file is part of PineAppleOS",
 			" *",
-			" * Copyright (C) $CURRENT_YEAR - ${2:Huo Yun}",
+			" * Copyright (C) $CURRENT_YEAR - ${2:Huo Yun} (${3:cloudblaze@yeah.net})",
 			" *",
 			" * PineAppleOS is free software; you can redistribute it and/or modify",
 			" * it under the terms of the GNU General Public License as published by",
@@ -41,8 +41,8 @@
 			" */",
 			"",
 			"/*",
-			" * Created by ${2:Huo Yun} - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
-			" * Description: $3",
+			" * Created by ${2:Huo Yun} (${3:cloudblaze@yeah.net}) - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
+			" * Description: $4",
 			" */",
 			"",
 			"$0"
@@ -58,7 +58,7 @@
 			"# $1/$TM_FILENAME",
 			"# This file is part of PineAppleOS",
 			"#",
-			"# Copyright (C) $CURRENT_YEAR - ${2:Huo Yun}",
+			"# Copyright (C) $CURRENT_YEAR - ${2:Huo Yun} (${3:cloudblaze@yeah.net})",
 			"#",
 			"# PineAppleOS is free software; you can redistribute it and/or modify",
 			"# it under the terms of the GNU General Public License as published by",
@@ -75,8 +75,8 @@
 			"#",
 			"",
 			"#",
-			"# Created by ${2:Huo Yun} - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
-			"# Description: $3",
+			"# Created by ${2:Huo Yun} (${3:cloudblaze@yeah.net}) - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
+			"# Description: $4",
 			"#",
 			"",
 			"$0"
@@ -85,12 +85,12 @@
 	},
 
 	"Modification infomation": {
-		"scope": "gas, c, makefile",
+		"scope": "gas, c",
 		"prefix": "modify",
 		"body": [
 			"/*",
-			" * Modified by ${1:Huo Yun} - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
-			" * Description: $2",
+			" * Modified by ${1:Huo Yun} (${2:cloudblaze@yeah.net}) - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
+			" * Description: $3",
 			" */",
 			"",
 			"$0"
@@ -102,10 +102,10 @@
 		"scope": "makefile",
 		"prefix": "modify",
 		"body": [
-			"/*",
-			" * Modified by ${1:Huo Yun} - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
-			" * Description: $2",
-			" */",
+			"#",
+			"# Modified by ${1:Huo Yun} (${2:cloudblaze@yeah.net}) - $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
+			"# Description: $3",
+			"#",
 			"",
 			"$0"
 		],
