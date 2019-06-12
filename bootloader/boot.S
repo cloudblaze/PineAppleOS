@@ -29,10 +29,10 @@
 #include <config/boot_parameter.h>
 #include <config/memory_layout.h>
 
-BOOTSECT_SEGMENT = DEF_BOOTSECT_SEGMENT >> 4
-BOOTSECT_STACK_SEGMENT = DEF_BOOTSECT_STACK_SEGMENT >> 4
-LOADER_SEGMENT = DEF_LOADER_SEGMENT >> 4
-BOOTPARAM_SEGMENT = DEF_BOOTPARAM_SEGMENT >> 4
+BOOTSECT_SEGMENT = DEFAULT_BOOTSECT_SEGMENT >> 4
+BOOTSECT_STACK_SEGMENT = DEFAULT_BOOTSECT_STACK_SEGMENT >> 4
+LOADER_SEGMENT = DEFAULT_LOADER_SEGMENT >> 4
+BOOTPARAM_SEGMENT = DEFAULT_BOOTPARAM_SEGMENT >> 4
 
 DEFAULT_CHARACTER_ATTRIBUTE = 0x07
 
@@ -61,6 +61,8 @@ FAT16_DIRECTORY_ENTRY_SIZE = 0x20
 
 // FDT表中长文件名的目录项属性
 FAT16_LONG_FILENAME_MODE = 0x0f
+
+DEFAULT_BYTES_PER_SECTOR = 0x200
 
 	.code16
 	.section .text
@@ -91,10 +93,18 @@ _start:
 
 	// 加载boot程序剩余代码
 load_rest_code:
+	mov boot_len, %ax
+	add $DEFAULT_BYTES_PER_SECTOR, %ax
+	dec %ax
+	xor %dx, %dx
+	mov $DEFAULT_BYTES_PER_SECTOR, %cx
+	div %cx
+	dec %ax
+
 	pushw $BOOTSECT_SEGMENT
 	pushw $0x200
 	pushw boot_device_num
-	pushw $1
+	pushw %ax
 	pushl $1
 	call load_sectors
 	add $12, %sp
@@ -169,6 +179,8 @@ _disk_address_packet_start_num:		.quad 0
 
 boot_device_num:
 	.word 0
+boot_len:
+	.word boot_end
 
 /******************** variable begin ********************/
 
@@ -442,3 +454,39 @@ fdt_start_num:
 	.long 0
 
 /******************** rest code end ********************/
+
+boot_end:
+
+	.align 0x200
+	/*
+	 * 由于按照512字节（一个扇区的大小）对齐，故gas会在此处填充一些数据，如下：
+ 38f:	eb 6f                	jmp    0x400
+ 391:	8d b4 00 00          	lea    0x0(%si),%si
+ 395:	8d b4 00 00          	lea    0x0(%si),%si
+ 399:	8d b4 00 00          	lea    0x0(%si),%si
+ 39d:	8d b4 00 00          	lea    0x0(%si),%si
+ 3a1:	8d b4 00 00          	lea    0x0(%si),%si
+ 3a5:	8d b4 00 00          	lea    0x0(%si),%si
+ 3a9:	8d b4 00 00          	lea    0x0(%si),%si
+ 3ad:	8d b4 00 00          	lea    0x0(%si),%si
+ 3b1:	8d b4 00 00          	lea    0x0(%si),%si
+ 3b5:	8d b4 00 00          	lea    0x0(%si),%si
+ 3b9:	8d b4 00 00          	lea    0x0(%si),%si
+ 3bd:	8d b4 00 00          	lea    0x0(%si),%si
+ 3c1:	8d b4 00 00          	lea    0x0(%si),%si
+ 3c5:	8d b4 00 00          	lea    0x0(%si),%si
+ 3c9:	8d b4 00 00          	lea    0x0(%si),%si
+ 3cd:	8d b4 00 00          	lea    0x0(%si),%si
+ 3d1:	8d b4 00 00          	lea    0x0(%si),%si
+ 3d5:	8d b4 00 00          	lea    0x0(%si),%si
+ 3d9:	8d b4 00 00          	lea    0x0(%si),%si
+ 3dd:	8d b4 00 00          	lea    0x0(%si),%si
+ 3e1:	8d b4 00 00          	lea    0x0(%si),%si
+ 3e5:	8d b4 00 00          	lea    0x0(%si),%si
+ 3e9:	8d b4 00 00          	lea    0x0(%si),%si
+ 3ed:	8d b4 00 00          	lea    0x0(%si),%si
+ 3f1:	8d b4 00 00          	lea    0x0(%si),%si
+ 3f5:	8d b4 00 00          	lea    0x0(%si),%si
+ 3f9:	8d b4 00 00          	lea    0x0(%si),%si
+ 3fd:	8d 74 00             	lea    0x0(%si),%si
+	 */

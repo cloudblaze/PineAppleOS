@@ -52,7 +52,7 @@ Image: bootloader os
 	then \
 		dd if=/dev/zero of=$@ bs=$(IMAGE_TOTAL_SIZE) count=1; \
 	fi
-	dd if=bootloader/boot of=Image bs=512 count=2 conv=notrunc
+	dd if=bootloader/boot of=Image bs=`wc -c < bootloader/boot` count=1 conv=notrunc
 	sudo mkdir -p $(VDISK)/p1
 	sudo mkdir -p $(VDISK)/p2
 	sudo mkdir -p $(VDISK)/p3
