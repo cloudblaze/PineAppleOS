@@ -66,6 +66,9 @@ FAT16_DIRECTORY_ENTRY_SIZE = 0x20
 // FDT表中长文件名的目录项属性
 FAT16_LONG_FILENAME_MODE = 0x0f
 
+// FAT表中的结束标志
+FAT16_FAT_END_FLAG = 0xffff
+
 DEFAULT_BYTES_PER_SECTOR = 0x200
 
 	.code16
@@ -338,9 +341,48 @@ load_loader:
 1:	and $0xffe0, %di
 	// 此时，%gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di)为loader的起始簇号，
 	// 而，%gs:FAT16_RDE_OFFSET_LENGTH(%di)为loader的长度
+	mov %gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di), %ax
+	mov %ax, loader_start_cluster_num
+
+	// 获取文件loader所占用的簇号
+	pushw $BOOT_CLUSTER_NUM_SEGMENT
+	pop %es
+	xor %di, %di
+	stosw
+	mov %esi, last_sector_num
+
+2:	mov %es:-2(%di), %si
+	mov $DEFAULT_BYTES_PER_SECTOR, %cx
+	shr $1, %cx
+	xor %dx, %dx
+	mov %si, %ax
+	div %cx
+	movzxw %ax, %eax
+	add fat_start_num, %eax
+	cmp %eax, last_sector_num
+	je 1f
+
+	mov %eax, last_sector_num
+	pushw $BOOT_BUFFER_SEGMENT
+	pushw $0
+	pushw boot_device_num
+	pushw $1
+	pushl %eax
+	call load_sectors
+	add $12, %sp
+	test %ax, %ax
+	jnz load_sector_failure
+
+1:	mov %dx, %si
+	shl $1, %si
+	cmpw $FAT16_FAT_END_FLAG, %gs:(%si)
+	je 1f
+	mov %gs:(%si), %ax
+	stosw
+	jmp 2b
 
 	// 跳过FDT表
-	mov $FAT16_DIRECTORY_ENTRY_SIZE, %ax
+1:	mov $FAT16_DIRECTORY_ENTRY_SIZE, %ax
 	mov root_directory_entry_count, %cx
 	mul %cx
 	mov bytes_per_sector, %cx
@@ -353,7 +395,7 @@ load_loader:
 	pushw $LOADER_SEGMENT
 	pushw $0
 	pushw boot_device_num
-	pushw %gs:FAT16_RDE_OFFSET_START_CLUSTER_NUM(%di)
+	pushw loader_start_cluster_num
 	call load_sectors_by_cluster_num
 	add $8, %sp
 	test %ax, %ax
@@ -455,6 +497,12 @@ root_directory_entry_count:
 fat_start_num:
 	.long 0
 fdt_start_num:
+	.long 0
+
+loader_start_cluster_num:
+	.word 0
+
+last_sector_num:
 	.long 0
 
 /******************** rest code end ********************/
