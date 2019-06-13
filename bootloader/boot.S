@@ -62,6 +62,24 @@ FAT16_FDE_OFFSET_START_CLUSTER_NUM = 0x1a
 // 文件大小，以字节为单位
 FAT16_FDE_OFFSET_LENGTH = 0x1c
 
+// 目录项中长文件名各字符的位置
+// ch0 - ch4
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_0 = 0x01
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_1 = 0x03
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_2 = 0x05
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_3 = 0x07
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_4 = 0x09
+// ch5 - ch10
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_5 = 0x0e
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_6 = 0x10
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_7 = 0x12
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_8 = 0x14
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_9 = 0x16
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_10 = 0x18
+// ch11 - ch12
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_11 = 0x1c
+FAT16_FDE_LONGNAME_CHARACTER_OFFSET_12 = 0x1e
+
 // FDT表中目录项的大小
 FAT16_DIRECTORY_ENTRY_SIZE = 0x20
 
@@ -77,7 +95,6 @@ DEFAULT_BYTES_PER_SECTOR = 0x200
 	.code16
 	.section .text
 	.global _start
-	.global LABEL_debug
 
 _start:
 	ljmp $BOOT_SEGMENT, $1f
@@ -330,19 +347,22 @@ load_loader:
 	add $12, %sp
 	test %ax, %ax
 	jnz load_sector_failure
+	mov %esi, last_sector_num
 
 	mov $FAT16_FDE_OFFSET_MODE, %di
 2:	cmpb $FAT16_LONG_FILENAME_MODE, %gs:(%di)
 	je 1f
+	and $0xffe0, %di
 	cmpb $FAT16_FILE_DELETED_FLAG, %gs:(%di)
 	je 1f
 	// 按长文件名确定是否为指定文件的目录项
 	mov %di, %ax
-	and $0xffe0, %ax
+	push %ds
+	pushw $loader_filename
 	push %gs
 	push %ax
 	call check_fde_by_long_filename
-	add $4, %sp
+	add $8, %sp
 	test %ax, %ax
 	jnz 1f
 	jmp 3f
@@ -515,10 +535,12 @@ data_start_num:
 /******************** function check_fde_by_long_filename begin ********************/
 
 /*
- * function: 将FAT16分区中指定簇号的扇区加载到内存指定地址。
+ * function: 检测指定的文件目录项的长文件名是否为指定的文件名。
  * args:
- * 	4(%bp) -- 加载地址偏移量
- * 	6(%bp) -- 加载地址段基址
+ * 	4(%bp) -- 文件目录项的地址偏移量
+ * 	6(%bp) -- 文件目录项的地址段基址
+ * 	8(%bp) -- 指定文件名字符串的地址偏移量
+ * 	10(%bp) -- 指定文件名字符串的地址段基址
  * return:
  * 	success: %ax == 0
  *	failure: %ax != 0
@@ -526,21 +548,142 @@ data_start_num:
 check_fde_by_long_filename:
 	push %bp
 	mov %sp, %bp
+	push %ds
+	push %es
+	push %fs
 	push %gs
+	push %bx
+	push %si
 	push %di
 
-	pushw 6(%bp)
-	pop %gs
-	mov 4(%bp), %di
+	mov last_sector_num, %eax
+	mov %eax, _original_last_sector_num
+	mov 8(%bp), %ax
+	mov %ax, _pointer_to_filename;
 
-	xor %ax, %ax
-	//mov $1, %ax
+	// 拼接文件长文件名在当前目录项中的部分
+	push %ds
+	pop %es
+
+	pushw 6(%bp)
+	pop %ds
+	mov 4(%bp), %si
+	mov $_string_buffer, %di
+
+	sub $0x20, %si
+	mov %si, %es:_current_fde_offset
+	add $FAT16_FDE_LONGNAME_CHARACTER_OFFSET_0, %si
+	// ch0
+	lodsw
+	stosw
+	// ch1
+	lodsw
+	stosw
+	// ch2
+	lodsw
+	stosw
+	// ch3
+	lodsw
+	stosw
+	// ch4
+	lodsw
+	stosw
+	mov %es:_current_fde_offset, %si
+	add $FAT16_FDE_LONGNAME_CHARACTER_OFFSET_5, %si
+	// ch5
+	lodsw
+	stosw
+	// ch6
+	lodsw
+	stosw
+	// ch7
+	lodsw
+	stosw
+	// ch8
+	lodsw
+	stosw
+	// ch9
+	lodsw
+	stosw
+	// ch10
+	lodsw
+	stosw
+	mov %es:_current_fde_offset, %si
+	add $FAT16_FDE_LONGNAME_CHARACTER_OFFSET_11, %si
+	// ch11
+	lodsw
+	stosw
+	// ch12
+	lodsw
+	stosw
+
+	push %es
+	pop %ds
+
+	/*
+	 * 自此，文件的长文件名在当前目录项的部分字符串已经拼接好了，现在开始比较。
+	 * 让%fs:%si指向从目录项中提取出的长文件名片段，
+	 * 让%gs:%di指向待搜索的文件名字符串。
+	 */
+	push %ds
+	pop %fs
+	mov $_string_buffer, %si
+	pushw 10(%bp)
+	pop %gs
+	mov _pointer_to_filename, %di
+
+1:	movzxb %gs:(%di), %ax
+	cmp %fs:(%si), %ax
+	jne 2f
+	test %ax, %ax
+	jz 1f
+	inc %di
+	add $2, %si
+	jmp 1b
+
+	movzxb %al, %ax
+	cmp %gs:(FAT16_FDE_LONGNAME_CHARACTER_OFFSET_0), %ax
+	jne 2f
+	test %ax, %ax
+	jz 1f
+
+1:	xor %bx, %bx
+	jmp 3f
+2:	mov $1, %bx
+
+3:	mov _original_last_sector_num, %eax
+	mov %eax, last_sector_num
+	pushw $BOOT_BUFFER_SEGMENT
+	pushw $0
+	pushw boot_device_num
+	pushw $1
+	pushl last_sector_num
+	call load_sectors
+	add $12, %sp
+	test %ax, %ax
+	jnz load_sector_failure
+
+	mov %bx, %ax
 
 	pop %di
+	pop %si
+	pop %bx
 	pop %gs
+	pop %fs
+	pop %es
+	pop %ds
 	mov %bp, %sp
 	pop %bp
 	ret
+
+_current_fde_offset:
+	.word 0
+_original_last_sector_num:
+	.long 0
+_pointer_to_filename:
+	.word 0
+_string_buffer:
+	.fill 13, 2, 0
 
 /******************** function check_fde_by_long_filename end ********************/
 
