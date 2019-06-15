@@ -29,7 +29,7 @@
 #include <config/boot_parameter.h>
 #include <config/memory_layout.h>
 
-#define DEFAULT_LOADER_FILENAME "loader"
+#define DEFAULT_LOADER_FILENAME "loader_abcdefghijklmnopqrstuvwxyz1234567890"
 
 BOOT_SEGMENT = DEFAULT_BOOT_SEGMENT >> 4
 LOADER_SEGMENT = DEFAULT_LOADER_SEGMENT >> 4
@@ -86,6 +86,8 @@ FAT16_DIRECTORY_ENTRY_SIZE = 0x20
 // FDT表中长文件名的目录项属性
 FAT16_LONG_FILENAME_MODE = 0x0f
 FAT16_FILE_DELETED_FLAG = 0xe5
+
+FAT16_FDE_END_FLAG_MASK = 0x40
 
 // FAT表中的结束标志
 FAT16_FAT_END_FLAG = 0xffff
@@ -553,13 +555,14 @@ check_fde_by_long_filename:
 	push %fs
 	push %gs
 	push %bx
+	push %cx
 	push %si
 	push %di
 
 	mov last_sector_num, %eax
 	mov %eax, _original_last_sector_num
 	mov 8(%bp), %ax
-	mov %ax, _pointer_to_filename;
+	mov %ax, _pointer_to_filename
 
 	// 拼接文件长文件名在当前目录项中的部分
 	push %ds
@@ -570,9 +573,15 @@ check_fde_by_long_filename:
 	mov 4(%bp), %si
 	mov $_string_buffer, %di
 
-	sub $0x20, %si
+4:	sub $0x20, %si
 	mov %si, %es:_current_fde_offset
-	add $FAT16_FDE_LONGNAME_CHARACTER_OFFSET_0, %si
+	mov %ds:(%si), %al
+	and $FAT16_FDE_END_FLAG_MASK, %al
+	test %al, %al
+	jz 1f
+	movb $1, _is_last_fde
+
+1:	add $FAT16_FDE_LONGNAME_CHARACTER_OFFSET_0, %si
 	// ch0
 	lodsw
 	stosw
@@ -632,6 +641,10 @@ check_fde_by_long_filename:
 	pop %gs
 	mov _pointer_to_filename, %di
 
+LABEL_debug:
+
+	mov $13, %cx
+
 1:	movzxb %gs:(%di), %ax
 	cmp %fs:(%si), %ax
 	jne 2f
@@ -639,13 +652,12 @@ check_fde_by_long_filename:
 	jz 1f
 	inc %di
 	add $2, %si
-	jmp 1b
-
-	movzxb %al, %ax
-	cmp %gs:(FAT16_FDE_LONGNAME_CHARACTER_OFFSET_0), %ax
-	jne 2f
-	test %ax, %ax
-	jz 1f
+	dec %cx
+	test %cx, %cx
+	jnz 1b
+	mov _is_last_fde, %al
+	test %al, %al
+	jnz 4b
 
 1:	xor %bx, %bx
 	jmp 3f
@@ -667,6 +679,7 @@ check_fde_by_long_filename:
 
 	pop %di
 	pop %si
+	pop %cx
 	pop %bx
 	pop %gs
 	pop %fs
@@ -684,6 +697,9 @@ _pointer_to_filename:
 	.word 0
 _string_buffer:
 	.fill 13, 2, 0
+
+_is_last_fde:
+	.byte 0
 
 /******************** function check_fde_by_long_filename end ********************/
 
