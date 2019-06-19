@@ -87,6 +87,8 @@ FAT16_DIRECTORY_ENTRY_SIZE = 0x20
 FAT16_LONG_FILENAME_MODE = 0x0f
 FAT16_FILE_DELETED_FLAG = 0xe5
 
+FAT16_LONG_FILENAME_CHARACTERS_OF_FDE = 13
+
 FAT16_FDE_END_FLAG_MASK = 0x40
 
 // FAT表中的结束标志
@@ -351,10 +353,9 @@ load_loader:
 	jnz load_sector_failure
 	mov %esi, last_sector_num
 
-	mov $FAT16_FDE_OFFSET_MODE, %di
-2:	cmpb $FAT16_LONG_FILENAME_MODE, %gs:(%di)
+	xor %di, %di
+2:	cmpb $FAT16_LONG_FILENAME_MODE, %gs:FAT16_FDE_OFFSET_MODE(%di)
 	je 1f
-	and $0xffe0, %di
 	cmpb $FAT16_FILE_DELETED_FLAG, %gs:(%di)
 	je 1f
 	// 按长文件名确定是否为指定文件的目录项
@@ -563,23 +564,22 @@ check_fde_by_long_filename:
 	mov %eax, _original_last_sector_num
 	mov 8(%bp), %ax
 	mov %ax, _pointer_to_filename
+	movb $0, _is_last_fde
 
 	// 拼接文件长文件名在当前目录项中的部分
+	mov 4(%bp), %bx
+4:	mov $_string_buffer, %di
 	push %ds
 	pop %es
-
 	pushw 6(%bp)
 	pop %ds
-	mov 4(%bp), %si
-	mov $_string_buffer, %di
-
-4:	sub $0x20, %si
-	mov %si, %es:_current_fde_offset
+	sub $FAT16_DIRECTORY_ENTRY_SIZE, %bx
+	mov %bx, %si
 	mov %ds:(%si), %al
 	and $FAT16_FDE_END_FLAG_MASK, %al
 	test %al, %al
 	jz 1f
-	movb $1, _is_last_fde
+	movb $1, %es:_is_last_fde
 
 1:	add $FAT16_FDE_LONGNAME_CHARACTER_OFFSET_0, %si
 	// ch0
@@ -597,7 +597,7 @@ check_fde_by_long_filename:
 	// ch4
 	lodsw
 	stosw
-	mov %es:_current_fde_offset, %si
+	mov %bx, %si
 	add $FAT16_FDE_LONGNAME_CHARACTER_OFFSET_5, %si
 	// ch5
 	lodsw
@@ -617,7 +617,7 @@ check_fde_by_long_filename:
 	// ch10
 	lodsw
 	stosw
-	mov %es:_current_fde_offset, %si
+	mov %bx, %si
 	add $FAT16_FDE_LONGNAME_CHARACTER_OFFSET_11, %si
 	// ch11
 	lodsw
@@ -641,15 +641,14 @@ check_fde_by_long_filename:
 	pop %gs
 	mov _pointer_to_filename, %di
 
-LABEL_debug:
-
-	mov $13, %cx
+	mov $FAT16_LONG_FILENAME_CHARACTERS_OF_FDE, %cx
 
 1:	movzxb %gs:(%di), %ax
 	cmp %fs:(%si), %ax
 	jne 2f
 	test %ax, %ax
 	jz 1f
+	incw _pointer_to_filename
 	inc %di
 	add $2, %si
 	dec %cx
@@ -657,7 +656,7 @@ LABEL_debug:
 	jnz 1b
 	mov _is_last_fde, %al
 	test %al, %al
-	jnz 4b
+	jz 4b
 
 1:	xor %bx, %bx
 	jmp 3f
@@ -689,14 +688,12 @@ LABEL_debug:
 	pop %bp
 	ret
 
-_current_fde_offset:
-	.word 0
 _original_last_sector_num:
 	.long 0
 _pointer_to_filename:
 	.word 0
 _string_buffer:
-	.fill 13, 2, 0
+	.fill FAT16_LONG_FILENAME_CHARACTERS_OF_FDE, 2, 0
 
 _is_last_fde:
 	.byte 0

@@ -84,6 +84,7 @@ Image: bootloader os
 		sudo mkfs.minix -1 /dev/loop$(LOOP_DEVICE_COUNT)p3; \
 		sudo mount /dev/loop$(LOOP_DEVICE_COUNT)p1 $(VDISK)/p1; \
 		sudo cp bootloader/loader $(VDISK)/p1; \
+		sudo mv $(VDISK)/p1/loader $(VDISK)/p1/loader_abcdefghijklmnopqrstuvwxyz1234567890; \
 		sudo cp os/system.elf $(VDISK)/p1; \
 		sudo umount $(VDISK)/p1; \
 		sudo losetup -d /dev/loop$(LOOP_DEVICE_COUNT); \
