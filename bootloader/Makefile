@@ -38,7 +38,7 @@ TEMPORARY_FILE	:= $(sources_S:.S=.s)
 # 链接图文件
 MAP_FILE		:=
 # 依赖文件
-DEPENDENT_FILE	:= $(sources_S:.S=.d)
+DEPENDENT_FILE	:= $(sources_S:.S=.d) $(sources_c:.c=.d)
 
 all: $(BINARY_FILE)
 
@@ -56,15 +56,13 @@ MAP_FILE	+= boot.map
 # 					rm.o intcall.o \
 # 					console.o vbe.o printf.o vsprintf16.o string.o \
 # 					main32.o
-LOADER_OBJ	= loader.o
+LOADER_OBJ	= loader.o main16.o main32.o
 
 loader: $(LOADER_OBJ)
 MAP_FILE	+= loader.map
 
-# 注释为最终的代码，但需要逐步编码
-#main16.o: main16.c
-
 include $(sources_S:.S=.d)
+include $(sources_c:.c=.d)
 
 .PHONY: clean
 

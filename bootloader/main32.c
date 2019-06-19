@@ -1,8 +1,8 @@
 /*
- * /bootloader/loader.S
+ * /bootloader/main32.c
  * This file is part of PineAppleOS
  *
- * Copyright (C) 2019 - Huo Yun
+ * Copyright (C) 2019 - Huo Yun (cloudblaze@yeah.net)
  *
  * PineAppleOS is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,36 +19,13 @@
  */
 
 /*
- * Created by Huo Yun - 2019-06-06
- * Description: 加载程序loader是bootloader的第二部分，而本程序是loader加载程序的入口模块，
- *	在该模块中创建C语言执行环境。
+ * Created by Huo Yun (cloudblaze@yeah.net) - 2019-06-19
+ * Description: 本程序是loader加载程序的32位模块，主要功能是在32位保护模式下
+ *  将系统内核映像加载到内存的指定位置。
  */
 
-#include <config/memory_layout.h>
-
-LOADER_STACK_SEGMENT = DEFAULT_LOADER_STACK_SEGMENT >> 4
-
-LOADER_STACK_LENGTH = DEFAULT_LOADER_STACK_LENGTH
-
-	.code16
-	.section .text
-	.global _start
-
-_start:
-	mov %cs, %ax
-	mov %ax, %ds
-	mov %ax, %es
-	mov %ax, %fs
-	mov %ax, %gs
-	mov $LOADER_STACK_SEGMENT, %ax
-	mov %ax, %ss
-	mov $LOADER_STACK_LENGTH, %bp
-	mov %bp, %sp
-	
-	calll main16
-
-	calll main32
-
-halt:
-	hlt
-	jmp halt
+void main32(void)
+{
+	__asm__(
+		"mov $0x22446688, %eax");
+}
