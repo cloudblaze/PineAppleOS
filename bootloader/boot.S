@@ -29,7 +29,7 @@
 #include <config/boot_parameter.h>
 #include <config/memory_layout.h>
 
-#define DEFAULT_LOADER_FILENAME "loader_abcdefghijklmnopqrstuvwxyz1234567890"
+#define DEFAULT_LOADER_FILENAME "loader"
 
 BOOT_SEGMENT = DEFAULT_BOOT_SEGMENT >> 4
 LOADER_SEGMENT = DEFAULT_LOADER_SEGMENT >> 4
@@ -568,7 +568,7 @@ check_fde_by_long_filename:
 
 	// 拼接文件长文件名在当前目录项中的部分
 	mov 4(%bp), %bx
-4:	mov $_string_buffer, %di
+5:	mov $_string_buffer, %di
 	push %ds
 	pop %es
 	pushw 6(%bp)
@@ -656,7 +656,21 @@ check_fde_by_long_filename:
 	jnz 1b
 	mov _is_last_fde, %al
 	test %al, %al
-	jz 4b
+	jnz 2f
+	test %bx, %bx
+	jnz 4f
+	decl last_sector_num
+	pushw $BOOT_BUFFER_SEGMENT
+	pushw $0
+	pushw boot_device_num
+	pushw $1
+	pushl last_sector_num
+	call load_sectors
+	add $12, %sp
+	test %ax, %ax
+	jnz load_sector_failure
+	mov $0x200, %bx
+4:	jmp 5b
 
 1:	xor %bx, %bx
 	jmp 3f
