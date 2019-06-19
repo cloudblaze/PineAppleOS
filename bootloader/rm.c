@@ -1,5 +1,5 @@
 /*
- * /bootloader/main16.c
+ * /bootloader/rm.c
  * This file is part of PineAppleOS
  *
  * Copyright (C) 2019 - Huo Yun (cloudblaze@yeah.net)
@@ -20,14 +20,19 @@
 
 /*
  * Created by Huo Yun (cloudblaze@yeah.net) - 2019-06-19
- * Description: 本程序是loader加载程序的16位模块，主要功能是初始化程序、获取硬件参数。
+ * Description: 与实模式有关的函数
  */
 
-#include <stdint.h>
-#include <stdio.h>
+#include <string.h>
 
-void main16(void)
+#include "rm.h"
+
+void init_regs(biosregs_t * regs)
 {
-	printf("Now, we could use c environment. :)\n");
-	printf("System Infomation:\n");
+    memset(regs, 0, sizeof(biosregs_t));
+    regs->eflags |= EFLAGS_CF;
+    regs->ds = ds();
+    regs->es = es();
+    regs->fs = fs();
+    regs->gs = gs();
 }

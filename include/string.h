@@ -1,5 +1,5 @@
 /*
- * /bootloader/main16.c
+ * /include/string.h
  * This file is part of PineAppleOS
  *
  * Copyright (C) 2019 - Huo Yun (cloudblaze@yeah.net)
@@ -20,14 +20,21 @@
 
 /*
  * Created by Huo Yun (cloudblaze@yeah.net) - 2019-06-19
- * Description: 本程序是loader加载程序的16位模块，主要功能是初始化程序、获取硬件参数。
+ * Description: C标准库头文件string.h
  */
 
-#include <stdint.h>
-#include <stdio.h>
+#ifndef STRING_H
+#define STRING_H
 
-void main16(void)
-{
-	printf("Now, we could use c environment. :)\n");
-	printf("System Infomation:\n");
-}
+#include <stddef.h>
+
+void * memset(void * s, int c, size_t n);
+size_t strlen(const char * str);
+
+#ifdef BIT16
+#include <rm.h>
+
+size_t strlen_fptr16(fptr16_t fptr);
+#endif
+
+#endif

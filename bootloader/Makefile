@@ -28,6 +28,7 @@ include $(SCRIPTS_DIR)/Makefile.variable
 include $(SCRIPTS_DIR)/Makefile.rule
 
 sources_S = $(shell ls *.S)
+sources_c = $(shell ls *.c)
 
 # 二进制文件
 BINARY_FILE	= boot loader
@@ -43,7 +44,7 @@ DEPENDENT_FILE	:= $(sources_S:.S=.d) $(sources_c:.c=.d)
 all: $(BINARY_FILE)
 
 ASFLAGS = $(ASFLAGS_16)
-CFLAGS	= $(CFLAGS_16) -I.
+CFLAGS	= $(CFLAGS_16) -I. -DBIT16
 LDFLAGS = $(LDFLAGS_16) -Ttext=0x0
 
 BOOT_OBJ = boot.o
@@ -56,7 +57,7 @@ MAP_FILE	+= boot.map
 # 					rm.o intcall.o \
 # 					console.o vbe.o printf.o vsprintf16.o string.o \
 # 					main32.o
-LOADER_OBJ	= loader.o main16.o main32.o
+LOADER_OBJ	= loader.o main16.o rm.o string.o vsprintf16.o intcall.o console.o printf.o main32.o
 
 loader: $(LOADER_OBJ)
 MAP_FILE	+= loader.map

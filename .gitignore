@@ -52,7 +52,7 @@ Mkfile.old
 dkms.conf
 
 # VSCode版本控制临时文件
-*.bin
+.vscode/ipch/*
 # 汇编语言源程序预处理结果文件
 *.s
 # 目标文件
