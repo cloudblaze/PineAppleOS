@@ -110,5 +110,21 @@
 			"$0"
 		],
 		"description": "Modification infomation in Makefile"
+	},
+
+	"Declare function": {
+		"scope": "c",
+		"prefix": "function",
+		"body": [
+			"/*",
+ 			" * function: $1",
+ 			" * args:",
+ 			" * \t@$2",
+ 			" * return:",
+ 			" * \t$3",
+			" */",
+			"$0"
+		],
+		"description": "Declare function"
 	}
 }

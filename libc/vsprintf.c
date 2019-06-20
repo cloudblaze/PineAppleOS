@@ -62,7 +62,16 @@
 
 static char number_string_buffer[BUFFER_SIZE];
 
-static char *int32_to_string_decimal(int32_t number, int flag, int width)
+/*
+ * function: 将32位有符号整数转换为字符串
+ * args:
+ * 	@number -- 32位有符号整数
+ * 	@flag -- 格式标志
+ *  @width -- 宽度
+ * return:
+ * 	转换后的字符串
+ */
+static char * int32_to_string_decimal(int32_t number, int flag, int width)
 {
 	int32_t num_tmp = number;
 	char *p = number_string_buffer;
@@ -509,21 +518,38 @@ static char *uint32_to_string_octal(uint32_t number, int flag, int width)
 	return ptr_first;
 }
 
-static char *insert_string(char *buf, const char *str)
+/*
+ * function: 在buffer缓冲区中追加字符串。
+ * args:
+ * 	@buffer -- 缓冲区
+ *  @string -- 待追加的字符串
+ * return:
+ * 	缓冲区中追加的字符串后面的位置
+ */
+static char * insert_string(char *buffer, const char *string)
 {
-	char *p = buf;
+	char *p = buffer;
 
-	while (*str)
+	while (*string)
 	{
-		*p++ = *str++;
+		*p++ = *string++;
 	}
 
 	return p;
 }
 
-int vsprintf(char *buf, const char *fmt, va_list args)
+/*
+ * function: 格式化输出字符串
+ * args:
+ * 	@buffer: 字符串缓冲区
+ * 	@format: 格式化字符串
+ *  @args: 可变参数
+ * return:
+ * 	如果成功，则返回输出的字符数；如果失败则返回一个负数。
+ */
+int vsprintf(char *buffer, const char *format, va_list args)
 {
-	char *str = buf;
+	char *string = buffer;
 	int flag = 0;
 	int int_type = INT_TYPE_INT;
 	int tot_width = 0;
@@ -540,13 +566,13 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 	int64_t num_64 = 0;
 	uint64_t num_u64 = 0;
 
-	for (const char *p = fmt; *p; p++)
+	for (const char *p = format; *p; p++)
 	{
 		if (*p != '%')
 		{
-			*str++ = *p;
+			*string++ = *p;
 			if(*p == '\n')
-				*str++ = '\r';
+				*string++ = '\r';
 			continue;
 		}
 
@@ -633,7 +659,7 @@ LOOP_switch:
 			}
 			else
 			{
-				*str++ = '%';
+				*string++ = '%';
 				break;
 			}
 		case 'l':
@@ -645,39 +671,39 @@ LOOP_switch:
 			}
 			else
 			{
-				*str++ = '%';
+				*string++ = '%';
 				break;
 			}
 		case 's':
 			s = va_arg(args, char *);
-			str = insert_string(str, s);
+			string = insert_string(string, s);
 			break;
 		case 'c':
 			ch = (char)(va_arg(args, int) & 0xFF);
-			*str++ = ch;
+			*string++ = ch;
 			break;
 		case 'd':
 			switch(int_type)
 			{
 				case INT_TYPE_CHAR:
 					num_8 = (int8_t)va_arg(args, int32_t);
-					str = insert_string(str, int32_to_string_decimal(num_8, flag, tot_width));
+					string = insert_string(string, int32_to_string_decimal(num_8, flag, tot_width));
 					break;
 				case INT_TYPE_SHORT:
 					num_16 = (int16_t)va_arg(args, int32_t);
-					str = insert_string(str, int32_to_string_decimal(num_16, flag, tot_width));
+					string = insert_string(string, int32_to_string_decimal(num_16, flag, tot_width));
 					break;
 				case INT_TYPE_INT:
 					num_32 = va_arg(args, int32_t);
-					str = insert_string(str, int32_to_string_decimal(num_32, flag, tot_width));
+					string = insert_string(string, int32_to_string_decimal(num_32, flag, tot_width));
 					break;
 				case INT_TYPE_LONG:
 					num_32 = va_arg(args, int32_t);
-					str = insert_string(str, int64_to_string_decimal(num_64, flag, tot_width));
+					string = insert_string(string, int64_to_string_decimal(num_64, flag, tot_width));
 					break;
 				case INT_TYPE_LONG_LONG:
 					num_64 = va_arg(args, int64_t);
-					str = insert_string(str, int64_to_string_decimal(num_64, flag, tot_width));
+					string = insert_string(string, int64_to_string_decimal(num_64, flag, tot_width));
 					break;
 			}
 			break;
@@ -688,40 +714,40 @@ LOOP_switch:
 			{
 				case INT_TYPE_CHAR:
 					num_u8 = (uint8_t)va_arg(args, uint32_t);
-					str = insert_string(str, uint32_to_string_hexadecimal(num_u8, flag, tot_width));
+					string = insert_string(string, uint32_to_string_hexadecimal(num_u8, flag, tot_width));
 					break;
 				case INT_TYPE_SHORT:
 					num_u16 = (uint16_t)va_arg(args, uint32_t);
-					str = insert_string(str, uint32_to_string_hexadecimal(num_u16, flag, tot_width));
+					string = insert_string(string, uint32_to_string_hexadecimal(num_u16, flag, tot_width));
 					break;
 				case INT_TYPE_INT:
 					num_u32 = va_arg(args, uint32_t);
-					str = insert_string(str, uint32_to_string_hexadecimal(num_u32, flag, tot_width));
+					string = insert_string(string, uint32_to_string_hexadecimal(num_u32, flag, tot_width));
 					break;
 				case INT_TYPE_LONG:
 					num_u32 = va_arg(args, uint32_t);
-					str = insert_string(str, uint64_to_string_hexadecimal(num_u64, flag, tot_width));
+					string = insert_string(string, uint64_to_string_hexadecimal(num_u64, flag, tot_width));
 					break;
 				case INT_TYPE_LONG_LONG:
 					num_u64 = va_arg(args, uint64_t);
-					str = insert_string(str, uint64_to_string_hexadecimal(num_u64, flag, tot_width));
+					string = insert_string(string, uint64_to_string_hexadecimal(num_u64, flag, tot_width));
 					break;
 			}
 			break;
 		case 'o':
 			num_u32 = va_arg(args, uint32_t);
-			str = insert_string(str, uint32_to_string_octal(num_u32, flag, tot_width));
+			string = insert_string(string, uint32_to_string_octal(num_u32, flag, tot_width));
 			break;
 		case '%':
-			*str++ = '%';
+			*string++ = '%';
 			break;
 		default:
-			*str++ = '%';
-			*str++ = *p;
+			*string++ = '%';
+			*string++ = *p;
 			break;
 		}
 	}
-	*str = '\0';
+	*string = '\0';
 
-	return str - buf;
+	return string - buffer;
 }

@@ -28,7 +28,24 @@
 
 #include <stdarg.h>
 
-int vsprintf(char * buffer, const char * format, va_list args);
+/*
+ * function: 格式化输出字符串
+ * args:
+ * 	@buffer: 字符串缓冲区
+ * 	@format: 格式化字符串
+ *  @args: 可变参数
+ * return:
+ * 	如果成功，则返回输出的字符数；如果失败则返回一个负数。
+ */
+int vsprintf(char *buffer, const char *format, va_list args);
+
+/*
+ * function: 格式化输出字符串
+ * args:
+ * 	@format -- 格式化字符串
+ * return:
+ * 	如果成功，则返回输出的字符数；如果失败则返回一个负数。
+ */
 int printf(const char * format, ...);
 
 #ifdef BIT16

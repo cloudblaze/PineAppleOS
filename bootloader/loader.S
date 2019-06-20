@@ -26,10 +26,6 @@
 
 #include <config/memory_layout.h>
 
-LOADER_STACK_SEGMENT = DEFAULT_LOADER_STACK_SEGMENT >> 4
-
-LOADER_STACK_LENGTH = DEFAULT_LOADER_STACK_LENGTH
-
 	.code16
 	.section .text
 	.global _start
@@ -40,9 +36,8 @@ _start:
 	mov %ax, %es
 	mov %ax, %fs
 	mov %ax, %gs
-	mov $LOADER_STACK_SEGMENT, %ax
-	mov %ax, %ss
-	mov $LOADER_STACK_LENGTH, %bp
+	mov %ax, %ss	// 在GCC中假定的是DS段和SS段是同一个段
+	xor %bp, %bp
 	mov %bp, %sp
 	
 	calll main16

@@ -26,8 +26,13 @@
 #include <stdint.h>
 #include <stdio.h>
 
+uint16_t scr_rows = 25;
+uint16_t scr_cols = 80;
+
 void main16(void)
 {
-	printf("Now, we could use c environment. :)\n");
+	for(int i = 0; i < scr_cols; i++)
+		printf("-");
+	printf("Now, we could use C environment. :)\n");
 	printf("System Infomation:\n");
 }

@@ -216,14 +216,14 @@ static inline fptr16_t get_fptr16_from_phys_address(uint16_t address)
 
 /*
 此处的注释需要保留，因为不确定预处理方式和静态内联方式中哪种方式有效。
-#define div_u64(num_u64, num_u32, remd) \
+#define div_u64(num_u64, num_u32, remainder) \
 ({ \
 	uint64_t num1 = (num_u64); \
 	uint32_t num2 = (num_u32); \
 	uint32_t rslt = 0; \
 	__asm__( \
-		"div %2" \
-		: "=a"(rslt), "=d"(remd) \
+		"div %4" \
+		: "=a"(rslt), "=d"(remainder) \
 		:"0"(*(int32_t *)&num1), "1"(*((int32_t *)&num1 + 1)), "b"(num2)); \
 	rslt; \
 })

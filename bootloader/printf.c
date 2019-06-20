@@ -49,6 +49,13 @@ int sprintf(char * buf, const char *format, ...)
 	return char_count;
 }
 
+/*
+ * function: printf
+ * args:
+ * 	@format -- 格式化字符串
+ * return:
+ * 	如果成功，则返回输出的字符数；如果失败则返回一个负数。
+ */
 int printf(const char *format, ...)
 {
 	int char_count = 0;
