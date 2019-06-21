@@ -68,15 +68,3 @@ int printf(const char *format, ...)
 
 	return char_count;
 }
-
-#ifdef BIT16
-#include <rm.h>
-
-#define _console_print_fptr16 console_print_fptr16
-size_t _console_print_fptr16(fptr16_t fptr);
-
-int printf_fptr16(fptr16_t fptr)
-{
-	return _console_print_fptr16(fptr);
-}
-#endif

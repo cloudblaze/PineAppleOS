@@ -29,10 +29,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef BIT16
-#include <rm.h>
-#endif
-
 #define FLAG_ALTERNATE_FORM 0x01
 #define FLAG_ALTERNATE_FORM_CH '#'
 
@@ -61,6 +57,33 @@
 #define BUFFER_SIZE 4096
 
 static char number_string_buffer[BUFFER_SIZE];
+
+/*
+此处的注释需要保留，因为不确定预处理方式和静态内联方式中哪种方式有效。
+#define div_u64(num_u64, num_u32, remainder) \
+({ \
+	uint64_t num1 = (num_u64); \
+	uint32_t num2 = (num_u32); \
+	uint32_t rslt = 0; \
+	__asm__( \
+		"div %4" \
+		: "=a"(rslt), "=d"(remainder) \
+		:"0"(*(int32_t *)&num1), "1"(*((int32_t *)&num1 + 1)), "b"(num2)); \
+	rslt; \
+})
+*/
+
+static inline uint32_t div_u64(uint64_t num1, uint32_t num2, uint32_t * remainder)
+{
+	uint32_t result = 0;
+
+	__asm__(
+		"div %4"
+		: "=a"(result), "=d"(*remainder)
+		:"0"(*(uint32_t *)&num1), "1"(*((uint32_t *)&num1 + 1)), "b"(num2));
+	
+	return result;
+}
 
 /*
  * function: 将32位有符号整数转换为字符串

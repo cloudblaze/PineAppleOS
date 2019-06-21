@@ -48,9 +48,4 @@ int vsprintf(char *buffer, const char *format, va_list args);
  */
 int printf(const char * format, ...);
 
-#ifdef BIT16
-#include "rm.h"
-int printf_fptr16(fptr16_t fptr16);
-#endif
-
 #endif

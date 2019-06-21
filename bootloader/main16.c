@@ -26,9 +26,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <rm.h>
 #include <config/bootsect.h>
 #include <config/memory_layout.h>
+
+#include "rm.h"
 
 #define SECTS_PER_TRACK 63
 #define HEADS 16

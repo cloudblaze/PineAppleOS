@@ -231,33 +231,6 @@ static inline fptr16_t get_fptr16_from_phys_address(uint16_t address)
 	obj; \
 })
 
-/*
-此处的注释需要保留，因为不确定预处理方式和静态内联方式中哪种方式有效。
-#define div_u64(num_u64, num_u32, remainder) \
-({ \
-	uint64_t num1 = (num_u64); \
-	uint32_t num2 = (num_u32); \
-	uint32_t rslt = 0; \
-	__asm__( \
-		"div %4" \
-		: "=a"(rslt), "=d"(remainder) \
-		:"0"(*(int32_t *)&num1), "1"(*((int32_t *)&num1 + 1)), "b"(num2)); \
-	rslt; \
-})
-*/
-
-static inline uint32_t div_u64(uint64_t num1, uint32_t num2, uint32_t * remainder)
-{
-	uint32_t result = 0;
-
-	__asm__(
-		"div %4"
-		: "=a"(result), "=d"(*remainder)
-		:"0"(*(uint32_t *)&num1), "1"(*((uint32_t *)&num1 + 1)), "b"(num2));
-	
-	return result;
-}
-
 typedef struct
 {
 	uint8_t boot_flag;
@@ -365,5 +338,7 @@ void vbe_get_mode_info(uint16_t mode_val);
 
 size_t strlen_fptr16(fptr16_t fptr);
 void memcpy_fptr16(fptr16_t dest_fptr, fptr16_t src_fptr, size_t n);
+
+int printf_fptr16(fptr16_t fptr16);
 
 #endif

@@ -148,3 +148,44 @@ void vbe_init(void)
 	vbe_get_video_mode_list(vbe_info_block.video_mode_ptr >> 16,
 		vbe_info_block.video_mode_ptr & 0xffff);
 }
+
+size_t strlen_fptr16(fptr16_t fptr)
+{	
+	size_t length = 0;
+
+	__asm__(
+		"push %%ds\n\t"
+		"mov %2, %%ds\n\t"
+		"1:lodsb\n\t"
+		"test %%al, %%al\n\t"
+		"jz 2f\n\t"
+		"inc %0\n\t"
+		"jmp 1b\n\t"
+		"2:pop %%ds"
+		: "=r"(length)
+		: "0"(0), "r"(get_segment_from_fptr16(fptr)), "S"(get_offset_from_fptr16(fptr))
+		: "eax");
+	
+	return length;
+}
+
+void memcpy_fptr16(fptr16_t dest_fptr, fptr16_t src_fptr, size_t n)
+{
+	__asm__(
+		"push %%ds\n\t"
+		"push %%es\n\t"
+		"mov %1, %%ds\n\t"
+		"mov %3, %%es\n\t"
+		"cld;rep;movsb;\n\t"
+		"pop %%es\n\t"
+		"pop %%ds"
+		:: "c"(n), "r"(get_segment_from_fptr16(src_fptr)), "S"(get_offset_from_fptr16(src_fptr)), "r"(get_segment_from_fptr16(dest_fptr)), "D"(get_offset_from_fptr16(dest_fptr)));
+}
+
+#define _console_print_fptr16 console_print_fptr16
+size_t _console_print_fptr16(fptr16_t fptr);
+
+int printf_fptr16(fptr16_t fptr)
+{
+	return _console_print_fptr16(fptr);
+}

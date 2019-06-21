@@ -44,7 +44,7 @@ DEPENDENT_FILE	:= $(sources_S:.S=.d) $(sources_c:.c=.d)
 all: $(BINARY_FILE)
 
 ASFLAGS = $(ASFLAGS_16)
-CFLAGS	= $(CFLAGS_16) -I. -DBIT16
+CFLAGS	= $(CFLAGS_16) -I.
 LDFLAGS = $(LDFLAGS_16) -Ttext=0x0
 
 BOOT_OBJ = boot.o
