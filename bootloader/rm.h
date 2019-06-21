@@ -27,6 +27,7 @@
 #define RM_H
 
 #include <stdint.h>
+#include <string.h>
 
 static inline uint16_t cs(void)
 {
@@ -177,6 +178,22 @@ typedef struct
 
 typedef struct
 {
+	uint16_t cyl;
+	uint8_t head;
+	uint16_t resv1;
+	uint16_t wpcom;
+	uint8_t resv2;
+	uint8_t ctl;
+	uint8_t resv3;
+	uint8_t resv4;
+	uint8_t resv5;
+	uint16_t lzone;
+	uint8_t sect;
+	uint8_t resv6;
+} __attribute__((packed)) hd_info_t;
+
+typedef struct
+{
 	uint16_t offset;
 	uint16_t segment;
 } __attribute__((packed)) fptr16_t;
@@ -262,5 +279,91 @@ void intcall(uint8_t intcall_num, biosregs_t * in_regs, biosregs_t * out_regs);
 void console_scroll_lines(int8_t lines);
 void console_get_any_key(void);
 
+typedef struct
+{
+	char vbe_sign[4];
+	uint16_t vbe_version;
+	uint32_t oem_string_ptr;
+	uint8_t capability[4];
+	uint32_t video_mode_ptr;
+	uint16_t total_memory;
+	uint16_t oem_software_revision;
+	uint32_t oem_vendor_name_ptr;
+	uint32_t oem_product_name_ptr;
+	uint32_t oem_product_revision_ptr;
+	uint8_t reserved[222];
+	uint8_t oem_data[256];
+} __attribute__((packed)) vbe_info_block_t;
+
+typedef struct
+{
+	uint16_t mode_attribute;
+	uint8_t window_a_attribute;
+	uint8_t window_b_attribute;
+	uint16_t window_granularity;
+	uint16_t window_size;
+	uint16_t window_a_segment;
+	uint16_t window_b_segment;
+	uint32_t window_function_ptr;
+	uint16_t bytes_per_scan_line;
+	uint16_t x_resolution;
+	uint16_t y_resolution;
+	uint8_t x_char_size;
+	uint8_t y_char_size;
+	uint8_t number_of_planes;
+	uint8_t bits_per_pixel;
+	uint8_t number_of_banks;
+	uint8_t memory_mode;
+	uint8_t bank_size;
+	uint8_t number_of_image_pages;
+	uint8_t reserved1;
+	uint8_t red_mask_size;
+	uint8_t red_field_position;
+	uint8_t green_mask_size;
+	uint8_t green_field_position;
+	uint8_t blue_mask_size;
+	uint8_t blue_field_position;
+	uint8_t reserved_mask_size;
+	uint8_t reserved_field_position;
+	uint8_t direct_color_mode_info;
+	uint32_t physical_base_ptr;
+	uint32_t reserved2;
+	uint16_t reserved3;
+	uint16_t linear_bytes_per_scan_line;
+	uint8_t bank_number_of_image_pages;
+	uint8_t linear_number_of_image_page;
+	uint8_t linear_red_mask_size;
+	uint8_t linear_red_field_position;
+	uint8_t linear_green_mask_size;
+	uint8_t linear_green_field_position;
+	uint8_t linear_blue_mask_size;
+	uint8_t linear_blue_field_position;
+	uint8_t linear_reserved_mask_size;
+	uint8_t linear_reserved_field_position;
+	uint32_t max_pixel_clock;
+	uint8_t reserved4[189];
+} __attribute__((packed)) vbe_mode_info_block_t;
+
+typedef struct
+{
+	uint16_t horizontal_total;
+	uint16_t horizontal_sync_start;
+	uint16_t horizontal_sync_end;
+	uint16_t vertical_total;
+	uint16_t vertical_sync_start;
+	uint16_t vertical_sync_end;
+	uint8_t flags;
+	uint32_t pixel_clock;
+	uint16_t refresh_rate;
+	uint8_t reserved[40];
+} __attribute__((packed)) vbe_crtc_info_block_t;
+
+void vbe_init(void);
+void vbe_set_mode(uint16_t mode_val);
+uint16_t vbe_get_current_mode_val(void);
+void vbe_get_mode_info(uint16_t mode_val);
+
+size_t strlen_fptr16(fptr16_t fptr);
+void memcpy_fptr16(fptr16_t dest_fptr, fptr16_t src_fptr, size_t n);
 
 #endif

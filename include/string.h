@@ -33,8 +33,6 @@ size_t strlen(const char * str);
 
 #ifdef BIT16
 #include <rm.h>
-
-size_t strlen_fptr16(fptr16_t fptr);
 #endif
 
 #endif
