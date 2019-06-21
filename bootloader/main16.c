@@ -156,7 +156,7 @@ void main16(void)
 				break;
 		}
 	}
-
+	
 	get_hd_info(hd_info_list);
 	printf("Hard disk:\n");
 	for(int i = 0; i < hd_info_cnt; i++)
@@ -165,22 +165,15 @@ void main16(void)
 		fptr16_t dest_ptr = get_fptr16_from_logic_address(ds(), (uint32_t)&dpt[i]);
 		memcpy_fptr16(dest_ptr, src_ptr, sizeof(DPT_t));
 
-		hd_info_list[i].cyl = (2048 + dpt[i].parts[0].lba_length + dpt[i].parts[1].lba_length + dpt[i].parts[2].lba_length + dpt[i].parts[3].lba_length) / (SECTS_PER_TRACK * HEADS);
-
-		printf("  sd%c: c/h/s=%d/%d/%d\n",
-			'a' + i,
-			hd_info_list[i].cyl,
-			//hd_info_list[i].head,
-			HEADS,
-			hd_info_list[i].sect);
-
+		printf("  sd%c: total %d sectors\n", 'a' + i, hd_info_list[i].cyl * hd_info_list[i].head * hd_info_list[i].sect);
 		for(int j = 0; j < 4; j++)
 		{
 			if(dpt[i].parts[j].lba_length > 0)
 			{
-				printf("    sd%c%d: %d - %d\n", 'a' + i, j + 1,
+				printf("    sd%c%d: %d - %d, total %d sectors\n", 'a' + i, j + 1,
 					dpt[i].parts[j].lba_start,
-					dpt[i].parts[j].lba_start + dpt[i].parts[j].lba_length - 1);
+					dpt[i].parts[j].lba_start + dpt[i].parts[j].lba_length - 1,
+					dpt[i].parts[j].lba_length);
 			}
 		}
 	}
