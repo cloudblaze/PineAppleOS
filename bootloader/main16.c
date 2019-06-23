@@ -162,11 +162,27 @@ void main16(void)
 	printf("Hard disk:\n");
 	for(int i = 0; i < hd_info_cnt; i++)
 	{
-		fptr16_t src_ptr = get_fptr16_from_logic_address(DEFAULT_BOOT_SEGMENT >> 4, BOOTSECT_OFFSECT_PARTITION_TABLE_ENTRY_1);
+		uint8_t bootsect[512];
+		biosregs_t in_regs;
+		biosregs_t out_regs;
+	
+		init_regs(&in_regs);
+		init_regs(&out_regs);
+		in_regs.ah = 0x02;
+		in_regs.al = 1;
+		in_regs.ch = 0;
+		in_regs.cl = 1;
+		in_regs.dh = 0;
+		in_regs.dl = 0x80 + i;
+		in_regs.es = ss();
+		in_regs.bx = (uint16_t)((uint32_t)bootsect & 0xffff);
+		intcall(0x13, &in_regs, &out_regs);
+
+		fptr16_t src_ptr = get_fptr16_from_logic_address(ss(), (uint16_t)((uint32_t)bootsect & 0xffff) + BOOTSECT_OFFSECT_PARTITION_TABLE);
 		fptr16_t dest_ptr = get_fptr16_from_logic_address(ds(), (uint32_t)&dpt[i]);
 		memcpy_fptr16(dest_ptr, src_ptr, sizeof(DPT_t));
 
-		printf("  sd%c: total %d sectors\n", 'a' + i, hd_info_list[i].cyl * hd_info_list[i].head * hd_info_list[i].sect);
+		printf("  sd%c: c/h/s = %d/%d/%d total %d sectors\n", 'a' + i, hd_info_list[i].cyl, hd_info_list[i].head, hd_info_list[i].sect, hd_info_list[i].cyl * hd_info_list[i].head * hd_info_list[i].sect);
 		for(int j = 0; j < 4; j++)
 		{
 			if(dpt[i].parts[j].lba_length > 0)
