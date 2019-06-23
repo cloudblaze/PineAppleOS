@@ -38,6 +38,14 @@
  * 	如果成功，则返回输出的字符数；如果失败则返回一个负数。
  */
 int vsprintf(char *buffer, const char *format, va_list args);
+#ifdef BIT16
+#define vsprintf vsprintf16
+#endif
+
+int sprintf(char * buf, const char *format, ...);
+#ifdef BIT16
+#define sprintf sprintf16
+#endif
 
 /*
  * function: 格式化输出字符串
@@ -47,5 +55,8 @@ int vsprintf(char *buffer, const char *format, va_list args);
  * 	如果成功，则返回输出的字符数；如果失败则返回一个负数。
  */
 int printf(const char * format, ...);
+#ifdef BIT16
+#define printf printf16
+#endif
 
 #endif

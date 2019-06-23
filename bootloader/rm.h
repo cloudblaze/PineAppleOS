@@ -252,8 +252,20 @@ typedef struct
 void init_regs(biosregs_t * regs);
 void intcall(uint8_t intcall_num, biosregs_t * in_regs, biosregs_t * out_regs);
 
-void console_scroll_lines(int8_t lines);
+size_t _console_print_fptr16(fptr16_t fptr);
+#define _console_print_fptr16 console16_print_fptr16
+
+size_t _console_get_cursor_pos(fptr16_t fptr);
+#define _console_get_cursor_pos console16_get_cursor_pos
+
+size_t _console_set_cursor_pos(fptr16_t fptr);
+#define _console_set_cursor_pos console16_set_cursor_pos
+
+void _console_scroll_lines(int8_t lines);
+#define _console_scroll_lines console_scroll_lines
+
 void console_get_any_key(void);
+#define _console_get_any_key console_get_any_key
 
 typedef struct
 {

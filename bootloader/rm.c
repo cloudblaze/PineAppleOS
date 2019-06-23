@@ -182,9 +182,6 @@ void memcpy_fptr16(fptr16_t dest_fptr, fptr16_t src_fptr, size_t n)
 		:: "c"(n), "r"(get_segment_from_fptr16(src_fptr)), "S"(get_offset_from_fptr16(src_fptr)), "r"(get_segment_from_fptr16(dest_fptr)), "D"(get_offset_from_fptr16(dest_fptr)));
 }
 
-#define _console_print_fptr16 console_print_fptr16
-size_t _console_print_fptr16(fptr16_t fptr);
-
 int printf_fptr16(fptr16_t fptr)
 {
 	return _console_print_fptr16(fptr);

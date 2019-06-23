@@ -28,7 +28,7 @@
 
 #include "rm.h"
 
-uint16_t console_get_cursor_pos(void)
+uint16_t console16_get_cursor_pos(void)
 {
 	biosregs_t in_regs;
 	biosregs_t out_regs;
@@ -42,7 +42,7 @@ uint16_t console_get_cursor_pos(void)
 	return out_regs.dx;
 }
 
-void console_set_cursor_pos(uint16_t pos)
+void console16_set_cursor_pos(uint16_t pos)
 {
 	biosregs_t in_regs;
 
@@ -53,7 +53,7 @@ void console_set_cursor_pos(uint16_t pos)
 	intcall(0x10, &in_regs, NULL);
 }
 
-void console_get_any_key(void)
+void console16_get_any_key(void)
 {
 	biosregs_t in_regs;
 
@@ -62,7 +62,7 @@ void console_get_any_key(void)
 	intcall(0x16, &in_regs, NULL);
 }
 
-void console_scroll_lines(int8_t lines)
+void console16_scroll_lines(int8_t lines)
 {
 	biosregs_t in_regs;
 
@@ -83,10 +83,10 @@ void console_scroll_lines(int8_t lines)
 	in_regs.dx = 0x1950;
 	intcall(0x10, &in_regs, NULL);
 
-	console_set_cursor_pos(console_get_cursor_pos() - 0x0100);
+	console16_set_cursor_pos(console16_get_cursor_pos() - 0x0100);
 }
 
-void console_print(const char * str)
+void console16_print(const char * str)
 {
 	biosregs_t in_regs;
 	const char * p = str;
@@ -101,7 +101,7 @@ void console_print(const char * str)
 	}
 }
 
-size_t console_print_fptr16(fptr16_t fptr)
+size_t console16_print_fptr16(fptr16_t fptr)
 {
 	biosregs_t in_regs;
 	biosregs_t out_regs;

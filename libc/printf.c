@@ -33,15 +33,24 @@ __asm__(".code16gcc");
 #include <stdint.h>
 #include <string.h>
 
-#define _console_print console_print
 void _console_print(const char * str);
+#ifdef BIT16
+#define _console_print console16_print
+#endif
 
 #define BUFFER_SIZE 4096
 static char string_buffer[BUFFER_SIZE];
 
 int vsprintf(char *buf, const char *format, va_list args);
+#ifdef BIT16
+#define vsprintf vsprintf16
+#endif
 
+#ifdef BIT16
+int sprintf16(char * buf, const char *format, ...)
+#else
 int sprintf(char * buf, const char *format, ...)
+#endif
 {
 	int char_count = 0;
 	va_list args;
@@ -60,7 +69,11 @@ int sprintf(char * buf, const char *format, ...)
  * return:
  * 	如果成功，则返回输出的字符数；如果失败则返回一个负数。
  */
+#ifdef BIT16
+int printf16(const char *format, ...)
+#else
 int printf(const char *format, ...)
+#endif
 {
 	int char_count = 0;
 	va_list args;

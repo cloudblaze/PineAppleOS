@@ -30,7 +30,11 @@ __asm__(".code16gcc");
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef BIT16
+void * memset16(void * s, int c, size_t n)
+#else
 void * memset(void * s, int c, size_t n)
+#endif
 {
     uint8_t * p = s;
 
@@ -42,7 +46,11 @@ void * memset(void * s, int c, size_t n)
     return s;
 }
 
+#ifdef BIT16
+size_t strlen16(const char * str)
+#else
 size_t strlen(const char * str)
+#endif
 {
     size_t length = 0;
 

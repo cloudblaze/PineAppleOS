@@ -574,7 +574,11 @@ static char * insert_string(char *buffer, const char *string)
  * return:
  * 	如果成功，则返回输出的字符数；如果失败则返回一个负数。
  */
+#ifdef BIT16
+int vsprintf16(char *buffer, const char *format, va_list args)
+#else
 int vsprintf(char *buffer, const char *format, va_list args)
+#endif
 {
 	char *string = buffer;
 	int flag = 0;

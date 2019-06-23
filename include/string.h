@@ -29,6 +29,13 @@
 #include <stddef.h>
 
 void * memset(void * s, int c, size_t n);
+#ifdef BIT16
+#define memset memset16
+#endif
+
 size_t strlen(const char * str);
+#ifdef BIT16
+#define strlen strlen16
+#endif
 
 #endif
