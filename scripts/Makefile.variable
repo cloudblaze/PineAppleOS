@@ -56,7 +56,7 @@ CFLAGS_32		= $(CFLAGS_global) -m32
 # -m elf_i386 -- 设定仿真为elf_i386（目标平台为i386）。
 # -Ttext=0x0 -- text段地址起始于0。
 # -Map
-LDFLAGS_global = --oformat binary -m elf_i386
+LDFLAGS_global = -m elf_i386
 LDFLAGS_16	= $(LDFLAGS_global)
 LDFLAGS_32	= $(LDFLAGS_global)
 

@@ -26,6 +26,8 @@
 #ifndef RM_H
 #define RM_H
 
+__asm__(".code16gcc");
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>

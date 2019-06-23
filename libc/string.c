@@ -23,6 +23,10 @@
  * Description: C标准库程序string.c
  */
 
+#ifdef BIT16
+__asm__(".code16gcc");
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 

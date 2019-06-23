@@ -23,6 +23,10 @@
  * Description: C标准库程序printf.c
  */
 
+#ifdef BIT16
+__asm__(".code16gcc");
+#endif
+
 #include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>

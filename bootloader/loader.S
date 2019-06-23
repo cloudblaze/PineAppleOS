@@ -42,7 +42,53 @@ _start:
 	
 	calll main16
 
-	calll main32
+	cli
+	
+	lidt idt_opcode
+	lgdt gdt_opcode
+
+	mov $0x0001, %ax
+	lmsw %ax
+	ljmp $0x0018, $1f
+
+	.align 8
+gdt:
+	.long 0x00000000, 0x00000000
+	.long 0x0000ffff, 0x00cf9a00
+	.long 0x0000ffff, 0x00cf9200
+	.long 0x0000ffff, 0x00cf9a01
+	.long 0x0000ffff, 0x00cf9201
+end_gdt:
+
+	.align 4
+	.word 0
+idt_opcode:
+	.word 0
+	.long 0
+
+	.align 4
+	.word 0
+gdt_opcode:
+	.word end_gdt - gdt - 1
+	.long DEFAULT_LOADER_SEGMENT + gdt
+	
+	.code32
+1:
+	mov $0x0020, %ax
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	mov %ax, %ss
+	mov ram_size, %ebp
+	shl $20, %ebp
+	sub $DEFAULT_LOADER_SEGMENT, %ebp
+	mov %ebp, %esp
+
+	call main32
+
+	// 跳转到内核入口地址
+	ljmp $0x08, $0x100000
 
 halt:
 	hlt
