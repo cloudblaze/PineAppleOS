@@ -26,6 +26,7 @@
 #ifndef RM_H
 #define RM_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -340,5 +341,16 @@ size_t strlen_fptr16(fptr16_t fptr);
 void memcpy_fptr16(fptr16_t dest_fptr, fptr16_t src_fptr, size_t n);
 
 int printf_fptr16(fptr16_t fptr16);
+
+typedef struct
+{
+	uint8_t size;
+	uint8_t reserved;
+	uint16_t count;
+	fptr16_t buffer;
+	uint64_t start_num;
+} __attribute__((packed)) disk_address_packet_t;
+
+bool hd_load_sector_from_disk(uint8_t driver_num, uint32_t lba_start, uint32_t count, fptr16_t buffer);
 
 #endif

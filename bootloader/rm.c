@@ -189,3 +189,31 @@ int printf_fptr16(fptr16_t fptr)
 {
 	return _console_print_fptr16(fptr);
 }
+
+bool hd_load_sector_from_disk(uint8_t driver_num, uint32_t lba_start, uint32_t count, fptr16_t buffer)
+{
+	biosregs_t in_regs;
+	biosregs_t out_regs;
+	disk_address_packet_t dat;
+
+	init_regs(&in_regs);
+	init_regs(&out_regs);
+	
+	dat.size = 0x10;
+	dat.count = count;
+	dat.buffer = buffer;
+	*(uint32_t *)&dat.start_num = lba_start;
+
+	in_regs.ah = 0x42;
+	in_regs.dl = driver_num;
+	in_regs.ds = ss();
+	in_regs.si = (uint32_t)&dat & 0xffff;
+	intcall(0x13, &in_regs, &out_regs);
+
+	if(out_regs.eflags & EFLAGS_CF)
+	{
+		return false;
+	}
+
+	return true;
+}

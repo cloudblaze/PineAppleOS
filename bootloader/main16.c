@@ -163,20 +163,13 @@ void main16(void)
 	for(int i = 0; i < hd_info_cnt; i++)
 	{
 		uint8_t bootsect[512];
-		biosregs_t in_regs;
-		biosregs_t out_regs;
-	
-		init_regs(&in_regs);
-		init_regs(&out_regs);
-		in_regs.ah = 0x02;
-		in_regs.al = 1;
-		in_regs.ch = 0;
-		in_regs.cl = 1;
-		in_regs.dh = 0;
-		in_regs.dl = 0x80 + i;
-		in_regs.es = ss();
-		in_regs.bx = (uint16_t)((uint32_t)bootsect & 0xffff);
-		intcall(0x13, &in_regs, &out_regs);
+
+		fptr16_t temp_ptr = get_fptr16_from_logic_address(ss(), (uint16_t)((uint32_t)bootsect & 0xffff));
+		if(!hd_load_sector_from_disk(0x80 + i, 0, 1, temp_ptr))
+		{
+			printf("read disk sectors error!\n");
+		}
+
 
 		fptr16_t src_ptr = get_fptr16_from_logic_address(ss(), (uint16_t)((uint32_t)bootsect & 0xffff) + BOOTSECT_OFFSECT_PARTITION_TABLE);
 		fptr16_t dest_ptr = get_fptr16_from_logic_address(ds(), (uint32_t)&dpt[i]);
