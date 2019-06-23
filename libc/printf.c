@@ -54,7 +54,7 @@ int sprintf(char * buf, const char *format, ...)
 }
 
 /*
- * function: printf
+ * function: 格式化输出字符串
  * args:
  * 	@format -- 格式化字符串
  * return:

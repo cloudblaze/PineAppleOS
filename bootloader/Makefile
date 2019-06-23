@@ -57,7 +57,7 @@ MAP_FILE	+= boot.map
 # 					rm.o intcall.o \
 # 					console.o vbe.o printf.o vsprintf16.o string.o \
 # 					main32.o
-LOADER_OBJ	= loader.o main16.o rm.o string.o vsprintf16.o intcall.o console.o printf.o main32.o
+LOADER_OBJ	= loader.o main16.o rm.o string16.o vsprintf16.o intcall.o console.o printf16.o main32.o
 
 loader: $(LOADER_OBJ)
 MAP_FILE	+= loader.map

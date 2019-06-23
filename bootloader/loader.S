@@ -87,6 +87,8 @@ gdt_opcode:
 
 	call main32
 
+	jmp halt
+
 	// 跳转到内核入口地址
 	ljmp $0x08, $0x100000
 
